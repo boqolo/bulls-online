@@ -1,0 +1,138 @@
+@import "../node_modules/purecss/build/base-min.css";
+@import "../node_modules/purecss/build/grids-min.css";
+@import "../node_modules/purecss/build/forms-min.css";
+@import "../node_modules/purecss/build/buttons-min.css";
+
+:root {
+    --just-about-black: #2b2a2a;
+    --near-black: #2e3440;
+    --greyish: #434c5e;
+    --whale-blue: #5e81ac;
+    --whiteish: #e5e9f0;
+    --banana: #ebcb8b;
+    --green: #a3be8c;
+    --red: #bf616a;
+}
+
+body {
+    background: var(--near-black);
+    color: var(--whiteish);
+    font-family: "Andale Mono", "Open Sans", Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* PureCSS Grid style compatibility */
+html, button, input, select, textarea,
+.pure-g [class *= "pure-u"] {
+    /* Set your content font stack here: */
+    font-family: "Andale Mono", "Helvetica", sans-serif;
+}
+
+button {
+    box-shadow: 4px 4px 10px var(--near-black);
+}
+
+input:focus {
+    outline: none;
+    box-shadow: 0 0 5px var(--whiteish);
+}
+
+.game-title-header {
+    color: var(--red);
+    font-size: 4em;
+}
+
+.game-won-header {
+    color: var(--green);
+}
+
+.game-over-header {
+    color: var(--red);
+}
+
+.game-container {
+    width: 360px;
+    background: var(--greyish);
+    margin: 5% auto;
+    padding: 1% 3% 2%;
+    border-radius: 10px;
+    user-select: none;
+    box-shadow: 4px 4px 10px var(--just-about-black);
+}
+
+.input-container {
+    border-radius: 10px;
+    margin: 5% 0 3%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+}
+
+.buttons-container {
+    display: flex;
+    justify-content: space-evenly;
+    font-size: 1.4em;
+}
+
+.button-main-restart-container {
+    display: flex;
+}
+
+.button-main-restart {
+    margin: 0 auto;
+    color: var(--whiteish);
+    width: 30%;
+    background: none;
+    box-shadow: none;
+}
+
+.button-main-restart:hover {
+    background: none;
+    text-decoration: line-through;
+    color: var(--red);
+}
+
+.button-main-restart:active {
+    background: none;
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+
+.guesses-container {
+    margin: 5% 0;
+}
+
+.guess-field {
+    border: 1px dotted var(--whiteish);
+    border-radius: 10px;
+    margin: 0 0 5%;
+    font-size: 4.2em;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.guess-list {
+    margin: 5% auto;
+    padding: 0 10% 0;
+    text-align: center;
+    font-size: 1.2em;
+    font-weight: lighter;
+    color: var(--banana);
+}
+
+.guess-list-label {
+    font-weight: normal;
+    font-size: 1.4em;
+    color: var(--banana);
+    text-decoration: underline;
+}
+
+.guess-item {
+    margin: 0 0 2%;
+}
+
+@media only screen and (max-width: 800px) {
+    .game-container {
+       width: 300px;
+    }
+}
