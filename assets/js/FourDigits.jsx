@@ -20,20 +20,23 @@ function Register({message}) {
         }
     }
 
-    return (<>
-              <h1>Enter a game name:</h1>
-              <input type={"text"} value={gameName} autoFocus={false}
-                     onChange={ev => handleKey(ev, setGameName)}></input>
-              <h1>Enter your name:</h1>
-              <input type={"text"} value={playerName} autoFocus={false}
-                     onChange={ev => handleKey(ev, setPlayerName)} onKeyPress={pressedEnter}></input>
+    return (<div className="register-container">
+              <h2>Enter a game name:</h2>
+              <div className={"input-container"}>
+                <input type={"text"} value={gameName} autoFocus={false}
+                       onChange={ev => handleKey(ev, setGameName)}></input>
+                <h2>Enter your name:</h2>
+                <input type={"text"} value={playerName} autoFocus={false}
+                       onChange={ev => handleKey(ev, setPlayerName)} onKeyPress={pressedEnter}>
+                </input>
+              </div>
               <div className={"buttons-container"}>
                 <button className={"pure-button pure-button-primary"}
                         disabled={!(gameName && playerName)}
                         onClick={() => ch_register({gameName: gameName, playerName: playerName})}>Submit
                 </button>
               </div>
-            </>);
+            </div>);
 }
 
 function GuessControls({
@@ -84,17 +87,32 @@ function GuessControls({
 }
 
 function PlayerHistory({player, guessHistory}) {
-  return <div className={"pure-u-1-1 guess-item"}>
-    <label className={"guess-list-label"}>{player}:</label>
-    {Object.keys(guessHistory).map(n => {
-      <div key={n}>
-        <div className={"pure-u-1-6"}>Guess no. {n}</div>
-        <div className={"pure-u-1-4"}>{guessHistory[n][0]}</div>
-        <div className={"pure-u-1-4"}>B: {guessHistory[n][1]}</div>
-        <div className={"pure-u-1-4"}>C: {guessHistory[n][2]}</div>
+
+  return (
+    <>
+    {Object.keys(guessHistory).map(n =>
+      <div key={`${player}-g-${n}`} className={"guess-item"}>
+        <div className={"pure-g"}>
+          <div className={"pure-u-1-5"}>
+            {player}
+          </div>
+          <div className={"pure-u-1-5"}>
+            G #
+          </div>
+          <div className={"pure-u-1-5"}>
+            Guess
+          </div>
+          <div className={"pure-u-1-5"}>
+            Bulls
+          </div>
+          <div className={"pure-u-1-5"}>
+            Cows
+          </div>
         </div>
-    })}
-    </div>;
+      </div>
+    )}
+    </>
+  );
 }
 
 function History({history}) {
@@ -102,10 +120,10 @@ function History({history}) {
     return (
         <div className={"guesses-container"}>
           <label className={"guess-list-label"}>Guesses:</label>
-          <div className={"pure-g guess-list"}>
-            {Object.keys(history).map(player => {
-                return <PlayerHistory key={player} player={player} guessHistory={history[player]} />;
-            })}
+          <div className={"guess-list"}>
+            {Object.keys(history).map(player =>
+              <PlayerHistory key={player} player={player} guessHistory={history[player]} />
+            )}
           </div>
         </div>
     );
@@ -123,20 +141,73 @@ function GameOver({restartGame}) {
            </>;
 }
 
+function Lobby() {
+
+  // TODO game name, list players, ready/unready, 
+  // toggle observer, back button
+
+  return (<><h1>You are in the game lobby</h1></>);
+}
+
+function Game({state}) {
+
+  const {
+    playerName,
+    gamePhase,
+    inputValue, 
+    history, 
+    gameWon, 
+    message
+  } = state;
+  
+  const MAX_DIGITS = 4;
+
+  if (gameWon) {
+      return <GameOver restartGame={restartGame}/>;
+  } else if (gamePhase == "Lobby") {
+      return <Lobby />    
+  } else {
+        const canSubmit = inputValue.length === MAX_DIGITS;
+        return <>
+          {gameWon && <>
+            <h1 className={"game-won-header"}>You won!</h1>
+            <p>The digits were {inputValue}.</p>
+            <button className={"pure-button pure-button-primary"}
+              onClick={restartGame}>Restart
+            </button>
+            </>}
+          {!gameWon && <>
+            <GuessControls inputValue={inputValue}
+                          inputHandler={pressKey}
+                          submitHandler={submitGuess}
+                          canSubmit={canSubmit}/>
+            <div className={"button-main-restart-container"}>
+            <button className={"pure-button button-main-restart"}
+              onClick={restartGame}>Restart
+            </button>
+            </div>
+            {message && <div className="alert-warning">{message}</div>}
+            </>}
+          <History history={history}/>
+        </>;
+    }
+
+}
+
 // Main Game Component
 export default function FourDigits() {
-
-    const MAX_DIGITS = 4;
 
     // 4-tuple of digits 0-9
     const [state, setState] = React.useState({
         playerName: "",
+        gamePhase: "",
         inputValue: "",
         history: {},
         gameWon: false,
         message: ""
     });
-    const {playerName, inputValue, history, gameWon, message} = state;
+
+    const {playerName, message} = state;
 
     /**
      * Set channel callback.
@@ -163,42 +234,24 @@ export default function FourDigits() {
     let body;
 
     if (!playerName) {
-        body = <Register message={message}/>;
-    } else if (gameWon) {
-        body = <GameOver restartGame={restartGame}/>;
+        body = <Register message={message} />;
     } else {
-        const canSubmit = inputValue.length === MAX_DIGITS;
-        body =
-            <>
-              <h1 className={"game-title-header"}>4Digits</h1>
-              {gameWon && <>
-                            <h1 className={"game-won-header"}>You won!</h1>
-                            <p>The digits were {inputValue}.</p>
-                            <button className={"pure-button pure-button-primary"}
-                                    onClick={restartGame}>Restart
-                            </button>
-                          </>}
-              {!gameWon && <>
-       <GuessControls inputValue={inputValue}
-                      inputHandler={pressKey}
-                      submitHandler={submitGuess}
-                      canSubmit={canSubmit}/>
-       <div className={"button-main-restart-container"}>
-         <button className={"pure-button button-main-restart"}
-                 onClick={restartGame}>Restart
-         </button>
-       </div>
-       {message && <div className="alert-warning">{message}</div>}
-     </>}
-              <History history={history}/>
-            </>;
+        body = <Game state={state} />
     }
 
 
     return (
-        <div className={"game-container"}>
+      <>
+        <div className={"header"}>
+          <div className={"logo"}>
+            <h1 className={"game-title-header"}>4Digits</h1>
+            <h3>Online</h3>
+          </div>
+        </div>
+        <div>
           {body}
         </div>
+      </>
     );
 
 }

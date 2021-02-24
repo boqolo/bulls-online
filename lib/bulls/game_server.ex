@@ -82,9 +82,9 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
-  def handle_call({:guess, gameName, playerName, guess}, _from, gameState0) do
+  def handle_call({:guess, _gameName, playerName, guess}, _from, gameState0) do
     gameState1 = Game.makeGuess(gameState0, guess, playerName)
-    GameAgent.put(gameName, gameState1)
+    # GameAgent.put(gameName, gameState1)
     {:reply, gameState1, gameState1}
   end
 

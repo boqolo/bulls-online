@@ -48,18 +48,24 @@ defmodule BullsWeb.GameChannel do
 
     {game, socket} =
       unless GameServer.duplicateGuess?(gname, pname, guess) do
-        game1 = GameServer.makeGuess(gname, pname, guess)
         # remove user message
         socket1 =
           socket0
           |> assign(message: "")
           |> assign(inputValue: "")
 
+        game1 = 
+          GameServer.makeGuess(gname, pname, guess)
+          |> Game.present(socket1.assigns)
+
         {game1, socket1}
       else
         # add user message
         socket1 = socket0 |> assign(message: "You've already made this guess.")
-        game1 = GameServer.peek(gname) |> Game.present(socket1.assigns)
+        game1 = 
+          GameServer.peek(gname)
+          |> Game.present(socket1.assigns)
+
         {game1, socket1}
       end
 

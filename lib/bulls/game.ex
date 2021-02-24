@@ -3,6 +3,8 @@ defmodule Bulls.Game do
   # getter for mod attr
   def num_digits, do: @num_digits
 
+  require Logger
+
   ### Data Definitions
   # answer, guess -> [Integer, Integer, Integer, Integer]
   # guessHistory  -> %{Integer => [Integer (numBulls), Integer (numCows)]}
@@ -14,6 +16,7 @@ defmodule Bulls.Game do
     %{
       # TODO revise for new vars
       answer: create4Digits(),
+      gamePhase: "Lobby",
       # String (playerName) -> guessHistory
       history: %{},
       gameWon: false
@@ -45,13 +48,15 @@ defmodule Bulls.Game do
       bulls = numBulls(guess, answer)
       cows = numCows(guess, answer) - bulls
       guessNumber = Enum.count(prevGuesses)
-      newHistory = Map.put(prevGuesses, guessNumber, [guess, bulls, cows])
+      newPlayerHistory = 
+        Map.put(prevGuesses, guessNumber, [guess, bulls, cows])
+      newHistory = Map.put(history, playerName, newPlayerHistory)
       %{game | history: newHistory}
     end
   end
 
-  def addPlayer(%{history: history} = game, pname) do
-    %{game | history: Map.put(history, pname, %{})}
+  def addPlayer(%{history: history} = game, playerName) do
+    %{game | history: Map.put(history, playerName, %{})}
   end
 
   @doc """
@@ -71,6 +76,7 @@ defmodule Bulls.Game do
   Check if a player has already made a guess before.
   """
   def duplicateGuess?(%{history: history} = _game, playerName, guess) do
+    Logger.debug(inspect(history))
     playerGuessHistory = Map.get(history, playerName)
     numPrevGuesses = Map.keys(playerGuessHistory)
 

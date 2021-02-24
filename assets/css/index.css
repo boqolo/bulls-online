@@ -36,9 +36,35 @@ input:focus {
     box-shadow: 0 0 5px var(--whiteish);
 }
 
+.header {
+    background: var(--greyish);
+    display: flex;
+    justify-content: flex-start;
+    flex-direction: row;
+    user-select: none;
+}
+
+.logo {
+    border-radius: 10px;
+    width: 300px;
+    text-align: center;
+    user-select: none;
+}
+
+.status-bar {
+    user-select: none;
+}
+
 .game-title-header {
     color: var(--red);
-    font-size: 4em;
+    font-size: 3em;
+}
+
+.game-lobby-header {
+  margin: 0 auto;
+  display: flex;
+  flex: 1;
+  text-align: center;
 }
 
 .game-won-header {
@@ -49,11 +75,11 @@ input:focus {
     color: var(--red);
 }
 
-.game-container {
-    width: 360px;
+.register-container {
+    width: 300px;
     background: var(--greyish);
     margin: 5% auto;
-    padding: 1% 3% 2%;
+    padding: 1% 5% 2%;
     border-radius: 10px;
     user-select: none;
     box-shadow: 4px 4px 10px var(--just-about-black);
@@ -61,7 +87,7 @@ input:focus {
 
 .input-container {
     border-radius: 10px;
-    margin: 5% 0 3%;
+    margin: 5% 0;
     display: flex;
     flex-direction: column;
     justify-content: space-around;
@@ -112,8 +138,11 @@ input:focus {
 }
 
 .guess-list {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
     margin: 5% auto;
-    padding: 0 10% 0;
+    padding: 0 0 0;
     text-align: center;
     font-size: 1.2em;
     font-weight: lighter;
@@ -129,6 +158,7 @@ input:focus {
 
 .guess-item {
     margin: 0 0 2%;
+    flex: 1;
 }
 
 @media only screen and (max-width: 800px) {
