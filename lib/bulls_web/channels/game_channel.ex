@@ -1,27 +1,69 @@
 defmodule BullsWeb.GameChannel do
-  use BullsWeb, :channel # imports module functions to ns
+  # imports module functions to ns
+  use BullsWeb, :channel
 
-  alias Bulls.{Game} # aliasing modules for easier use
+  # aliasing modules for easier use
+  alias Bulls.{Game, GameServer}
   require Logger
 
   @impl true
-  def join("game:" <> _number, _payload, socket0) do
-    # This is required to be defined to handle joining the channel
-    socket1 = assign(socket0, game: Game.new(), answer: Game.create4Digits())
-    Logger.debug(inspect(socket1.assigns.answer))
-    {:ok, socket1.assigns.game, socket1} # send response. {status, jsonResp, socketConn}
+  def join("game:" <> _name, _payload, socket0) do
+    socket1 =
+      socket0
+      |> assign(game: "")
+      |> assign(player: "")
+
+    {:ok, socket1}
+  end
+
+  @impl true
+  def handle_in("register", %{"gameName" => gname, "playerName" => pname}, socket0) do
+    Logger.debug(inspect(gname))
+
+    if validName?(pname) do
+      GameServer.start(gname)
+      pname = String.trim(pname)
+      GameServer.addPlayer(gname, pname)
+
+      socket1 =
+        socket0
+        |> assign(gameName: gname)
+        |> assign(playerName: pname)
+        |> assign(inputValue: "")
+        |> assign(message: "")
+
+      game = GameServer.peek(gname) |> Game.present(socket1.assigns)
+
+      {:reply, {:ok, game}, socket1}
+    else
+      # {status, {status response}, socketConn}
+      {:noreply, socket0}
+    end
   end
 
   @impl true
   def handle_in("guess", guessStr, socket0) do
-    # These are required to match requests hitting the channel
-    %{game: game, answer: answer} = socket0.assigns
-    Logger.debug(inspect(socket0.assigns.game))
-    updatedGame = guessStr
-    |> parseGuess()
-    |> Game.makeGuess(answer, game)
-    socket1 = assign(socket0, game: updatedGame)
-    {:reply, {:ok, updatedGame}, socket1} # {status, {status response}, socketConn}
+    %{gameName: gname, playerName: pname} = socket0.assigns
+    guess = parseGuess(guessStr)
+
+    {game, socket} =
+      unless GameServer.duplicateGuess?(gname, pname, guess) do
+        game1 = GameServer.makeGuess(gname, pname, guess)
+        # remove user message
+        socket1 =
+          socket0
+          |> assign(message: "")
+          |> assign(inputValue: "")
+
+        {game1, socket1}
+      else
+        # add user message
+        socket1 = socket0 |> assign(message: "You've already made this guess.")
+        game1 = GameServer.peek(gname) |> Game.present(socket1.assigns)
+        {game1, socket1}
+      end
+
+    {:reply, {:ok, game}, socket}
   end
 
   # this tells you that you are implementing functions from another module
@@ -33,35 +75,43 @@ defmodule BullsWeb.GameChannel do
 
   @impl true
   def handle_in("validate", inputValue, socket0) do
-    %{game: game0} = socket0.assigns
+    Logger.debug("Received: " <> inspect(inputValue))
+    %{gameName: gname} = socket0.assigns
+    game0 = GameServer.peek(gname)
     # reject non-digits, 0, duplicated digits, and impose limit
-    unless invalidInput?(inputValue) do
-      game1 = %{game0 | inputValue: inputValue}
-      socket1 = assign(socket0, game: game1)
-      {:reply, {:ok, game1}, socket1}
-    else
-      {:reply, {:ok, game0}, socket0}
-    end
+    {game, socket} =
+      unless invalidInput?(inputValue) do
+        socket1 = assign(socket0, inputValue: inputValue)
+        game1 = game0 |> Game.present(socket1.assigns)
+        {game1, socket1}
+      else
+        game1 = game0 |> Game.present(socket0.assigns)
+        {game1, socket0}
+      end
+
+    {:reply, {:ok, game}, socket}
   end
 
-  @doc"""
-  Checks if given input string could form a valid guess.
-  """
+  defp validName?(playerName) do
+    String.length(playerName) > 0 && String.valid?(playerName) && String.length(playerName) < 10
+  end
+
+  # Checks if given input string could form a valid guess.
   defp invalidInput?(inputValue) do
     invalidChar = Regex.match?(~r/\D|0/, inputValue)
-    maxInput = String.length(inputValue) > Game.num_digits
-    duplicateDigit = Enum.count(Enum.uniq(String.graphemes(inputValue))) < String.length(inputValue)
+    maxInput = String.length(inputValue) > Game.num_digits()
+
+    duplicateDigit =
+      Enum.count(Enum.uniq(String.graphemes(inputValue))) < String.length(inputValue)
+
     invalidChar || duplicateDigit || maxInput
   end
 
-  @doc"""
-  Converts a valid guess string (string of 4 unique digits) into a
-  a guess tuple [Integer, Integer, Integer, Integer] for processing.
-  """
+  # Converts a valid guess string (string of 4 unique digits) into a
+  # a guess tuple [Integer, Integer, Integer, Integer] for processing.
   defp parseGuess(guessStr) do
     guessStr
     |> String.graphemes()
-    |> Enum.map(fn(d) -> elem(Integer.parse(d), 0) end)
+    |> Enum.map(fn d -> elem(Integer.parse(d), 0) end)
   end
-
 end

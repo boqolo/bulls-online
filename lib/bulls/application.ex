@@ -5,6 +5,7 @@ defmodule Bulls.Application do
 
   use Application
 
+  # TODO add Agent and DynamicSupervisor
   def start(_type, _args) do
     children = [
       # Start the Telemetry supervisor
@@ -12,8 +13,13 @@ defmodule Bulls.Application do
       # Start the PubSub system
       {Phoenix.PubSub, name: Bulls.PubSub},
       # Start the Endpoint (http/https)
-      BullsWeb.Endpoint
+      BullsWeb.Endpoint,
+      # Start Bulls Game Registry Agent
+      {Bulls.GameAgent, %{}}, # start with argument initial state
+      # Start GameServer Process Registry
+      {Registry, keys: :unique, name: Bulls.GameRegistry},
       # Start a worker by calling: Bulls.Worker.start_link(arg)
+      Bulls.GameSupervisor, # start DynamicSupervisor
       # {Bulls.Worker, arg}
     ]
 

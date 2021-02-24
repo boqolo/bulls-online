@@ -10,7 +10,7 @@ use Mix.Config
 # Configures the endpoint
 config :bulls, BullsWeb.Endpoint,
   url: [host: "localhost"],
-  secret_key_base: #TODO,
+  secret_key_base: "ujqa31MTmTZ1RNr8ob2YDhEiCbxSY80IGboKl+pg7FwgmzLhCuvycCLY+0sRx96H",
   render_errors: [view: BullsWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Bulls.PubSub,
   live_view: [signing_salt: "IclTZoEJ"]

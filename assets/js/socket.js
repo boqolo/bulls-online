@@ -20,7 +20,13 @@ socket.onClose(() => console.log("Websocket closed."));
 // Finally, connect to the socket:
 socket.connect();
 
+const counter = (function () {
+  let c = 0;
+  return function () {c += 1; return c}
+}) ();
+
 function serverUpdate(state) {
+  console.log("Received server update", counter(), state);
     appState = state;
     if (appStateCallback) {
         appStateCallback(appState);
@@ -44,6 +50,11 @@ let channel = socket.channel("game:1", {});
 channel.join()
     .receive("ok", serverUpdate)
     .receive("error", resp => { console.log("Unable to join channel", resp); });
+
+
+export function ch_register(names) {
+    channel.push("register", names).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+}
 
 export function ch_guess(guess) {
     channel.push("guess", guess).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
