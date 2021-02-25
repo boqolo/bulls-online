@@ -1,21 +1,20 @@
-# TODO
 
 [Unit]
-Description=Bulls (4Digits)
+Description=Bulls Online
 
 [Service]
 Type=simple
-User=bulls
-Group=bulls
+User=bulls-online
+Group=bulls-online
 Restart=always
 RestartSec=1
 Environment=MIX_ENV=prod
-Environment=PORT=5690
+Environment=PORT=9898
 Environment=PROD=true
 Environment=LANG=en_US.UTF-8
 
-WorkingDirectory=/home/bulls/www/bulls
-ExecStart=/bin/bash /home/bulls/www/bulls/start.sh
+WorkingDirectory=/home/bulls-online/www/bulls-online
+ExecStart=/bin/bash /home/bulls-online/www/bulls-online/start.sh
 
 [Install]
 WantedBy=multi-user.target

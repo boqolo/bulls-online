@@ -10,7 +10,7 @@
 
 export SECRET_KEY_BASE=#TODO
 export MIX_ENV=prod mix phx.server
-export PORT=5690
+export PORT=9898
 
 echo "Stopping old copy of app, if any..."
 
