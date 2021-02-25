@@ -1,5 +1,5 @@
 import React from "react";
-import { ch_join, ch_register, ch_guess, ch_reset, ch_validate, ch_toggle_ready } from "./socket";
+import { ch_join, ch_register, ch_guess, ch_toggle_observer, ch_reset, ch_validate, ch_toggle_ready } from "./socket";
 
 function Register({message}) {
     const [gameName, setGameName] = React.useState("");
@@ -153,8 +153,8 @@ function Lobby({
   const readyPlayers = playerNames.filter(name => 
     players[name][1] === "ready");
   const playerReady = players[playerName][1] === "ready";
-  // TODO game name, list players, ready/unready, 
-  // toggle observer, back button, numPlayers, numReady, ch_toggle_ready
+  const isObserver = players[playerName][0] === "observer";
+  // TODO toggle observer, back button, 
 
   return (
     <div className={"lobby"}>
@@ -178,15 +178,28 @@ function Lobby({
           )}
         </div>
         <div className={"pure-u-1-3"}>
-          {playerReady ? 
-            <button className={"pure-button unready-button"}
-                    onClick={() => ch_toggle_ready(playerName)}>
-              Unready
-            </button>
-            : <button className={"pure-button ready-button"}
+          <div>
+            {playerReady ? 
+              <button className={"pure-button unready-button"}
                       onClick={() => ch_toggle_ready(playerName)}>
-                Ready
-              </button>}
+                Unready
+              </button>
+              : <button className={"pure-button pure-button-primary ready-button"}
+                        onClick={() => ch_toggle_ready(playerName)}>
+                  Ready
+                </button>}
+          </div>
+          <div>
+            {isObserver ? 
+              <button className={"pure-button toggle-player-button"}
+                      onClick={() => ch_toggle_observer(playerName)}>
+                Become Player
+              </button>
+              : <button className={"pure-button toggle-observer-button"}
+                        onClick={() => ch_toggle_observer(playerName)}>
+                  Become Observer
+                </button>}
+          </div>
         </div>
       </div>
     </div>

@@ -50,6 +50,19 @@ defmodule Bulls.Game do
     %{game | players: newPlayers}
   end
 
+  def toggleObserver(%{players: players} = game, playerName) do
+    [observer?, _] = playerStatus = Map.get(players, playerName)
+    newPlayerStatus = if observer? == "observer" do
+      playerStatus
+      |> List.replace_at(0, "player")
+    else
+      playerStatus
+      |> List.replace_at(0, "observer")
+    end
+    newPlayers = Map.replace(players, playerName, newPlayerStatus)
+    %{game | players: newPlayers}
+  end
+
   @doc """
   Given a guess, answer, and game state, returns a new game state
   reflecting the outcome of making the guess on the game if it is
@@ -71,15 +84,14 @@ defmodule Bulls.Game do
   end
 
   def addPlayer(%{history: history, players: players} = game, playerName) do
-    name = unless duplicateName?(players, playerName) do
-      playerName
-      else
+    unless duplicateName?(players, playerName) do
+      newHistory = Map.put(history, playerName, %{})
+      newPlayers = Map.put(players, playerName, ["player", "unready"])
+      %{game | history: newHistory, players: newPlayers}
+    else
       # Append a random number to name if taken
       addPlayer(game, playerName <> Integer.to_string(:rand.uniform(1000)))
     end
-    newHistory = Map.put(history, name, %{})
-    newPlayers = Map.put(players, name, ["player", "unready"])
-    %{game | history: newHistory, players: newPlayers}
   end
 
   @doc """

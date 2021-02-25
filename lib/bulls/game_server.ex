@@ -37,6 +37,10 @@ defmodule Bulls.GameServer do
     GenServer.call(registry(gameName), {:toggleReady, playerName})
   end
 
+  def toggleObserver(gameName, playerName) do
+    GenServer.call(registry(gameName), {:toggleObserver, playerName})
+  end
+
   def duplicateGuess?(gameName, playerName, guess) do
     GenServer.call(registry(gameName), {:duplicateGuess?, playerName, guess})
   end
@@ -82,6 +86,12 @@ defmodule Bulls.GameServer do
   @impl true
   def handle_call({:toggleReady, playerName}, _from, gameState0) do
     gameState1 = Game.toggleReady(gameState0, playerName)
+    {:reply, gameState1, gameState1}
+  end
+
+  @impl true
+  def handle_call({:toggleObserver, playerName}, _from, gameState0) do
+    gameState1 = Game.toggleObserver(gameState0, playerName)
     {:reply, gameState1, gameState1}
   end
 

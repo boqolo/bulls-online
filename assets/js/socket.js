@@ -60,6 +60,10 @@ export function ch_toggle_ready(playerName) {
     channel.push("toggle_ready", playerName).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }
 
+export function ch_toggle_observer(playerName) {
+    channel.push("toggle_observer", playerName).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+}
+
 export function ch_guess(guess) {
     channel.push("guess", guess).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }

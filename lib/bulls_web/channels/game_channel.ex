@@ -30,7 +30,7 @@ defmodule BullsWeb.GameChannel do
         |> assign(gameName: gname)
         |> assign(playerName: pname)
         |> assign(inputValue: "")
-        |> assign(message: "")
+        |> assign(message: "Welcome " <> pname <> "! Play or observe. Click ready to start.")
 
       game = GameServer.peek(gname) |> Game.present(socket1.assigns)
 
@@ -49,6 +49,33 @@ defmodule BullsWeb.GameChannel do
     socket1 = 
       socket0
       |> assign(message: "Please wait. The game will start when everyone is ready.")
+
+    game = GameServer.peek(gname) |> Game.present(socket1.assigns)
+
+    {:reply, {:ok, game}, socket1}
+  end
+
+  @impl true
+  def handle_in("toggle_observer", playerName, socket0) do
+    gname = socket0.assigns.gameName
+    GameServer.toggleObserver(gname, playerName)
+    game = GameServer.peek(gname)
+    formatStr = fn(role) -> if role == "player" do
+        "a player" 
+      else 
+        "an observer"
+      end
+    end
+
+    newRole = 
+      game.players
+      |> Map.get(playerName)
+      |> List.first()
+      |> formatStr.()
+
+    socket1 = 
+      socket0
+      |> assign(message: "You are " <> newRole <> ". Please wait for the game to start.")
 
     game = GameServer.peek(gname) |> Game.present(socket1.assigns)
 
