@@ -10,14 +10,26 @@ defmodule Bulls.Game do
   # guessHistory  -> %{Integer => [Integer (numBulls), Integer (numCows)]}
 
   @doc """
-  Create an empty game state.
+  Create a new game state.
   """
   def new do
     %{
-      # TODO revise for new vars
+      # TODO add topic/game name
       answer: create4Digits(),
       gamePhase: "lobby",
       # String (playerName) -> guessHistory
+      history: %{},
+      players: %{},
+      gameWon: false
+    }
+  end
+
+  @doc """
+  Create an empty game state, useful for resetting state.
+  """
+  def newEmpty do
+    %{
+      gamePhase: "",
       history: %{},
       players: %{},
       gameWon: false
@@ -35,6 +47,10 @@ defmodule Bulls.Game do
     |> Map.put(:gameName, gname)
     |> Map.put(:inputValue, iv)
     |> Map.put(:message, msg)
+  end
+
+  def beginGame(game) do
+    %{game | gamePhase: "playing"}
   end
 
   def toggleReady(%{players: players} = game, playerName) do
@@ -88,10 +104,14 @@ defmodule Bulls.Game do
       newHistory = Map.put(history, playerName, %{})
       newPlayers = Map.put(players, playerName, ["player", "unready"])
       %{game | history: newHistory, players: newPlayers}
-    else
+      else
       # Append a random number to name if taken
       addPlayer(game, playerName <> Integer.to_string(:rand.uniform(1000)))
     end
+  end
+
+  def removePlayer(game, playerName) do
+    Map.drop(game.players, [playerName])
   end
 
   @doc """
@@ -105,6 +125,12 @@ defmodule Bulls.Game do
       4 -> digits
       _ -> create4Digits()
     end
+  end
+
+  def readyToStart?(%{players: players} = _game) do
+    Map.values(players)
+    |> Enum.map(fn(status) -> List.last(status) end)
+    |> Enum.all?(fn(readiness) -> readiness == "ready" end)
   end
 
   @doc """

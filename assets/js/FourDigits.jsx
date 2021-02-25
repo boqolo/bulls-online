@@ -1,5 +1,5 @@
 import React from "react";
-import { ch_join, ch_register, ch_guess, ch_toggle_observer, ch_reset, ch_validate, ch_toggle_ready } from "./socket";
+import { ch_join, ch_register, ch_leave, ch_guess, ch_toggle_observer, ch_reset, ch_validate, ch_toggle_ready } from "./socket";
 
 function Register({message}) {
     const [gameName, setGameName] = React.useState("");
@@ -200,6 +200,12 @@ function Lobby({
                   Become Observer
                 </button>}
           </div>
+          <div>
+            <button className={"pure-button leave-button"}
+                    onClick={() => ch_leave(playerName)}>
+              Leave game
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -227,7 +233,9 @@ function Game({state}) {
       body = <GameOver restartGame={restartGame}/>;
   } else if (gamePhase == "lobby") {
       body = <Lobby playerName={playerName} gameName={gameName} players={players} message={message}/>    
-  } else {
+  } else if (gamePhase == "endgame") {
+      // TODO maybe not needed
+  } else { // gamePhase === "playing"
         const canSubmit = inputValue.length === MAX_DIGITS;
         body = <>
           {gameWon && <>

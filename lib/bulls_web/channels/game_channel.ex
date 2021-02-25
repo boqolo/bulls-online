@@ -10,15 +10,15 @@ defmodule BullsWeb.GameChannel do
   def join("game:" <> _name, _payload, socket0) do
     socket1 =
       socket0
-      |> assign(game: "")
-      |> assign(player: "")
+      |> assign(gameName: "")
+      |> assign(playerName: "")
 
     {:ok, socket1}
   end
 
   @impl true
-  def handle_in("register", %{"gameName" => gname, "playerName" => pname} = args, socket0) do
-    Logger.debug("REGISTER: " <> inspect(args))
+  def handle_in("register", %{"gameName" => gname, "playerName" => pname} = _args, socket0) do
+    Logger.debug("REGISTER: " <> inspect(socket0))
 
     if validName?(pname) do
       GameServer.start(gname)
@@ -42,17 +42,42 @@ defmodule BullsWeb.GameChannel do
   end
 
   @impl true
+  def handle_in("leave", playerName, socket0) do
+    gname = socket0.assigns.gameName
+    GameServer.removePlayer(gname, playerName)
+
+    socket1 =
+      socket0
+      |> assign(gameName: "")
+      |> assign(playerName: "")
+
+    state = 
+      Game.newEmpty()
+      |> Game.present(socket1.assigns)
+
+    {:reply, {:ok, state}, socket1}
+  end
+
+  @impl true
   def handle_in("toggle_ready", playerName, socket0) do
     gname = socket0.assigns.gameName
     GameServer.toggleReady(gname, playerName)
 
-    socket1 = 
-      socket0
-      |> assign(message: "Please wait. The game will start when everyone is ready.")
+    if GameServer.readyToStart?(gname) do
+      GameServer.beginGame(gname)
+      # [{serverPid, _}] = Registry.lookup(Bulls.GameRegistry, gname)
+      # Logger.debug("SERVER REGISTRY: " <> inspect(serverPid))
+      # Process.send(serverPid, :begin, [])
+      {:noreply, socket0}
+    else
+      socket1 = 
+        socket0
+        |> assign(message: "Please wait. The game will start when everyone is ready.")
 
-    game = GameServer.peek(gname) |> Game.present(socket1.assigns)
+      game = GameServer.peek(gname) |> Game.present(socket1.assigns)
 
-    {:reply, {:ok, game}, socket1}
+      {:reply, {:ok, game}, socket1}
+    end
   end
 
   @impl true
@@ -137,6 +162,17 @@ defmodule BullsWeb.GameChannel do
       end
 
     {:reply, {:ok, game}, socket}
+  end
+
+  intercept ["present"]
+
+  # This will intercept outgoing presentation events and embellish them. yay
+  @impl true
+  def handle_out("present", state, socket) do
+    newAssigns = %{socket.assigns | message: ""}
+    newState = state |> Game.present(newAssigns)
+    push(socket, "present", newState)
+    {:noreply, socket}
   end
 
   defp validName?(playerName) do

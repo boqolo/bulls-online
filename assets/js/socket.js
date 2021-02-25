@@ -51,9 +51,15 @@ channel.join()
     .receive("ok", serverUpdate)
     .receive("error", resp => { console.log("Unable to join channel", resp); });
 
+// Trigger presentation callback on server events (broadcasts)
+channel.on("present", serverUpdate);
 
 export function ch_register(names) {
     channel.push("register", names).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+}
+
+export function ch_leave(playerName) {
+    channel.push("leave", playerName).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }
 
 export function ch_toggle_ready(playerName) {

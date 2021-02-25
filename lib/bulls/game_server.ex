@@ -29,8 +29,16 @@ defmodule Bulls.GameServer do
     GenServer.call(registry(gameName), {:peek})
   end
 
+  def beginGame(gameName) do
+    GenServer.call(registry(gameName), {:beginGame})
+  end
+
   def addPlayer(gameName, playerName) do
     GenServer.call(registry(gameName), {:addPlayer, gameName, playerName})
+  end
+
+  def removePlayer(gameName, playerName) do
+    GenServer.call(registry(gameName), {:removePlayer, gameName, playerName})
   end
 
   def toggleReady(gameName, playerName) do
@@ -39,6 +47,10 @@ defmodule Bulls.GameServer do
 
   def toggleObserver(gameName, playerName) do
     GenServer.call(registry(gameName), {:toggleObserver, playerName})
+  end
+
+  def readyToStart?(gameName) do
+    GenServer.call(registry(gameName), {:readyToStart?})
   end
 
   def duplicateGuess?(gameName, playerName, guess) do
@@ -79,8 +91,28 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
+  def handle_info(:begin, gameState) do 
+    Logger.debug("BEGINNING GAME")
+    BullsWeb.Endpoint.broadcast!("game:1", "present", gameState)
+    {:noreply, gameState}
+  end
+
+  @impl true
   def handle_call({:peek}, _from, gameState) do
     {:reply, gameState, gameState}
+  end
+
+  @impl true
+  def handle_call({:readyToStart?}, _from, gameState0) do
+    ready? = Game.readyToStart?(gameState0)
+    {:reply, ready?, gameState0}
+  end
+
+  @impl true
+  def handle_call({:beginGame}, _from, gameState0) do
+    gameState1 = Game.beginGame(gameState0)
+    Process.send_after(self(), :begin, 500, [])
+    {:reply, gameState1, gameState1}
   end
 
   @impl true
@@ -92,6 +124,14 @@ defmodule Bulls.GameServer do
   @impl true
   def handle_call({:toggleObserver, playerName}, _from, gameState0) do
     gameState1 = Game.toggleObserver(gameState0, playerName)
+    {:reply, gameState1, gameState1}
+  end
+
+  @impl true
+  def handle_call({:reset, gameName}, _from, gameState0) do
+    gameState1 = %{Game.new() | players: Map.get(gameState0, "players")}
+    GameAgent.put(gameName, gameState1)
+    # {:reply, send back, new val to loop with}
     {:reply, gameState1, gameState1}
   end
 
@@ -109,17 +149,17 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
-  def handle_call({:reset, gameName}, _from, gameState0) do
-    gameState1 = %{Game.new() | players: Map.get(gameState0, "players")}
-    GameAgent.put(gameName, gameState1)
-    # {:reply, send back, new val to loop with}
-    {:reply, gameState1, gameState1}
-  end
-
-  @impl true
   def handle_call({:addPlayer, _gameName, playerName}, _from, gameState0) do
     gameState1 = Game.addPlayer(gameState0, playerName)
     # GameAgent.put(gameName, gameState1)
     {:reply, gameState1, gameState1}
   end
+
+  @impl true
+  def handle_call({:removePlayer, _gameName, playerName}, _from, gameState0) do
+    gameState1 = Game.removePlayer(gameState0, playerName)
+    # GameAgent.put(gameName, gameState1)
+    {:reply, gameState1, gameState1}
+  end
+
 end
