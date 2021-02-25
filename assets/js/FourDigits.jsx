@@ -141,34 +141,66 @@ function GameOver({restartGame}) {
            </>;
 }
 
-function Lobby() {
+function Lobby({playerName, gameName, players}) {
 
+  // players is {playerName (string): ["player" | "observer", "ready" | "unready"]
+  const playerNames = Object.keys(players);
+  const readyPlayers = playerNames.filter(name => 
+    players[name][1] === "ready");
+  const playerReady = players[playerName][1] === "ready";
   // TODO game name, list players, ready/unready, 
-  // toggle observer, back button
+  // toggle observer, back button, numPlayers, numReady, ch_toggle_ready
 
-  return (<><h1>You are in the game lobby</h1></>);
+  return (
+    <div className={"lobby"}>
+      <div className={"status-bar"}>
+        {`${gameName} Game Lobby: ${playerNames.length} players. ${readyPlayers.length} ready!`}</div>
+      <div className={"pure-g"}>
+        <div className={"pure-u-2-3"}>
+          {playerNames.map(name => 
+            <div key={name} className={"lobby-player"}>
+              {name}
+            </div>
+          )}
+        </div>
+        <div className={"pure-u-1-3"}>
+          {playerReady ? 
+            <button className={"pure-button unready-button"}
+                    onClick={() => {console.log("Unready")}}>
+            </button>
+            : <button className={"pure-button ready-button"}
+                      onClick={() => {console.log("Ready!")}}>
+              </button>}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Game({state}) {
 
   const {
     playerName,
+    gameName,
     gamePhase,
     inputValue, 
     history, 
+    players,
     gameWon, 
     message
   } = state;
   
   const MAX_DIGITS = 4;
 
+  let body;
+
   if (gameWon) {
-      return <GameOver restartGame={restartGame}/>;
-  } else if (gamePhase == "Lobby") {
-      return <Lobby />    
+      body = <GameOver restartGame={restartGame}/>;
+  } else if (gamePhase == "lobby") {
+      body = <Lobby playerName={playerName} gameName={gameName} players={players}/>    
   } else {
         const canSubmit = inputValue.length === MAX_DIGITS;
-        return <>
+        body = <>
           {gameWon && <>
             <h1 className={"game-won-header"}>You won!</h1>
             <p>The digits were {inputValue}.</p>
@@ -192,6 +224,12 @@ function Game({state}) {
         </>;
     }
 
+  return (
+    <>
+      {body}
+    </>
+  );
+
 }
 
 // Main Game Component
@@ -200,9 +238,11 @@ export default function FourDigits() {
     // 4-tuple of digits 0-9
     const [state, setState] = React.useState({
         playerName: "",
+        gameName: "",
         gamePhase: "",
         inputValue: "",
         history: {},
+        players: {},
         gameWon: false,
         message: ""
     });

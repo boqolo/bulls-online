@@ -16,9 +16,10 @@ defmodule Bulls.Game do
     %{
       # TODO revise for new vars
       answer: create4Digits(),
-      gamePhase: "Lobby",
+      gamePhase: "lobby",
       # String (playerName) -> guessHistory
       history: %{},
+      players: %{},
       gameWon: false
     }
   end
@@ -27,10 +28,11 @@ defmodule Bulls.Game do
   Embellish the shared game state with connection state to 
   present to the end user.
   """
-  def present(state, %{playerName: pname, inputValue: iv, message: msg} = _assigns) do
+  def present(state, %{playerName: pname, gameName: gname, inputValue: iv, message: msg} = _assigns) do
     {_, sanitizedState} = Map.pop(state, :answer)
     sanitizedState
     |> Map.put(:playerName, pname)
+    |> Map.put(:gameName, gname)
     |> Map.put(:inputValue, iv)
     |> Map.put(:message, msg)
   end
@@ -55,8 +57,16 @@ defmodule Bulls.Game do
     end
   end
 
-  def addPlayer(%{history: history} = game, playerName) do
-    %{game | history: Map.put(history, playerName, %{})}
+  def addPlayer(%{history: history, players: players} = game, playerName) do
+    name = unless duplicateName?(players, playerName) do
+      playerName
+      else
+      # Append a random number to name if taken
+      addPlayer(game, playerName <> Integer.to_string(:rand.uniform(1000)))
+    end
+    newHistory = Map.put(history, name, %{})
+    newPlayers = Map.put(players, name, ["player", "unready"])
+    %{game | history: newHistory, players: newPlayers}
   end
 
   @doc """
@@ -84,6 +94,16 @@ defmodule Bulls.Game do
       [prevGuess, _, _] = Map.get(playerGuessHistory, i)
       prevGuess == guess
     end)
+  end
+
+  @doc """
+  Check if a given name is already represented in the
+  map of players.
+  """
+  def duplicateName?(players, playerName) do
+    players
+    |> Map.keys()
+    |> Enum.any?(fn(name) -> name == playerName end)
   end
 
   @doc """
