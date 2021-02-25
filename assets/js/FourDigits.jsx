@@ -1,5 +1,5 @@
 import React from "react";
-import { ch_join, ch_register, ch_guess, ch_reset, ch_validate } from "./socket";
+import { ch_join, ch_register, ch_guess, ch_reset, ch_validate, ch_toggle_ready } from "./socket";
 
 function Register({message}) {
     const [gameName, setGameName] = React.useState("");
@@ -141,7 +141,12 @@ function GameOver({restartGame}) {
            </>;
 }
 
-function Lobby({playerName, gameName, players}) {
+function Lobby({
+  playerName,
+  gameName, 
+  players,
+  message
+}) {
 
   // players is {playerName (string): ["player" | "observer", "ready" | "unready"]
   const playerNames = Object.keys(players);
@@ -154,22 +159,33 @@ function Lobby({playerName, gameName, players}) {
   return (
     <div className={"lobby"}>
       <div className={"status-bar"}>
-        {`${gameName} Game Lobby: ${playerNames.length} players. ${readyPlayers.length} ready!`}</div>
+        <div>
+          {`${gameName} - Lobby `}
+        </div>
+        <div>
+          {`${playerNames.length} players | ${readyPlayers.length} ready`}
+        </div>
+        {message && <div className="lobby-message">{message}</div>}
+      </div>
       <div className={"pure-g"}>
         <div className={"pure-u-2-3"}>
           {playerNames.map(name => 
             <div key={name} className={"lobby-player"}>
-              {name}
+              <div className={!readyPlayers.includes(name) ? "unready-player" : ""}>
+                {name}
+              </div>
             </div>
           )}
         </div>
         <div className={"pure-u-1-3"}>
           {playerReady ? 
             <button className={"pure-button unready-button"}
-                    onClick={() => {console.log("Unready")}}>
+                    onClick={() => ch_toggle_ready(playerName)}>
+              Unready
             </button>
             : <button className={"pure-button ready-button"}
-                      onClick={() => {console.log("Ready!")}}>
+                      onClick={() => ch_toggle_ready(playerName)}>
+                Ready
               </button>}
         </div>
       </div>
@@ -197,7 +213,7 @@ function Game({state}) {
   if (gameWon) {
       body = <GameOver restartGame={restartGame}/>;
   } else if (gamePhase == "lobby") {
-      body = <Lobby playerName={playerName} gameName={gameName} players={players}/>    
+      body = <Lobby playerName={playerName} gameName={gameName} players={players} message={message}/>    
   } else {
         const canSubmit = inputValue.length === MAX_DIGITS;
         body = <>

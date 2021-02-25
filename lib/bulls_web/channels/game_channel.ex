@@ -17,8 +17,8 @@ defmodule BullsWeb.GameChannel do
   end
 
   @impl true
-  def handle_in("register", %{"gameName" => gname, "playerName" => pname}, socket0) do
-    Logger.debug(inspect(gname))
+  def handle_in("register", %{"gameName" => gname, "playerName" => pname} = args, socket0) do
+    Logger.debug("REGISTER: " <> inspect(args))
 
     if validName?(pname) do
       GameServer.start(gname)
@@ -39,6 +39,20 @@ defmodule BullsWeb.GameChannel do
       # {status, {status response}, socketConn}
       {:noreply, socket0}
     end
+  end
+
+  @impl true
+  def handle_in("toggle_ready", playerName, socket0) do
+    gname = socket0.assigns.gameName
+    GameServer.toggleReady(gname, playerName)
+
+    socket1 = 
+      socket0
+      |> assign(message: "Please wait. The game will start when everyone is ready.")
+
+    game = GameServer.peek(gname) |> Game.present(socket1.assigns)
+
+    {:reply, {:ok, game}, socket1}
   end
 
   @impl true

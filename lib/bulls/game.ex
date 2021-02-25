@@ -37,6 +37,19 @@ defmodule Bulls.Game do
     |> Map.put(:message, msg)
   end
 
+  def toggleReady(%{players: players} = game, playerName) do
+    [_, readiness] = playerStatus = Map.get(players, playerName)
+    newPlayerStatus = if readiness == "ready" do
+      playerStatus
+      |> List.replace_at(1, "unready")
+    else
+      playerStatus
+      |> List.replace_at(1, "ready")
+    end
+    newPlayers = Map.replace(players, playerName, newPlayerStatus)
+    %{game | players: newPlayers}
+  end
+
   @doc """
   Given a guess, answer, and game state, returns a new game state
   reflecting the outcome of making the guess on the game if it is
