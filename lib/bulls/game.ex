@@ -12,9 +12,10 @@ defmodule Bulls.Game do
   @doc """
   Create a new game state.
   """
-  def new do
+  def new(gameName \\ "") do
     %{
       # TODO add topic/game name
+      gameName: gameName,
       answer: create4Digits(),
       gamePhase: "lobby",
       # String (playerName) -> guessHistory
@@ -42,7 +43,7 @@ defmodule Bulls.Game do
   """
   def present(game, assigns) do
     {_, sanitizedState} = Map.pop(game, :answer)
-    Map.merge(sanitizedState, assigns)
+    Map.merge(assigns, sanitizedState) # Game messages overwrite user ones
   end
 
   def beginGame(game) do

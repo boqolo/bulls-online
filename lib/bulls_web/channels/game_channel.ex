@@ -25,8 +25,11 @@ defmodule BullsWeb.GameChannel do
     if validName?(gname) && validName?(pname) do
       # TODO not always starting a new game
       # TODO add topic to game state
+      # FIXME checking if game exists on join again w same name
       noGameServerRunning? = Registry.lookup(Bulls.GameRegistry, gname) == []
+      Logger.debug("RUNNINGGAME??: " <> inspect(noGameServerRunning?))
       if noGameServerRunning?, do: GameServer.start(gname)
+      Logger.debug(inspect(gname) <> inspect(pname))
       GameServer.addPlayer(gname, pname)
 
       socket1 =
@@ -34,16 +37,13 @@ defmodule BullsWeb.GameChannel do
         |> assign(gameName: gname)
         |> assign(playerName: pname)
         |> assign(inputValue: "")
-        |> assign(message: "Welcome " <> pname <> "! Play or observe. Click ready to start.")
+        |> assign(message: "Welcome, " <> pname <> "! Play or observe. Click ready to start.")
 
-      game = 
-        GameServer.peek(gname)
-        |> Game.present(socket1.assigns)
+      game = GameServer.peek(gname)
 
-      {:reply, {:ok, game}, socket1}
+      {:reply, {:present, game}, socket1}
     else
       # {status, {status response}, socketConn}
-      # # TODO send error
       socket1 =
         socket0
         |> assign(message: "Invalid game or player name. Try again.")
@@ -186,8 +186,7 @@ defmodule BullsWeb.GameChannel do
   # This will intercept outgoing presentation events and embellish them. yay
   @impl true
   def handle_out("present", state, socket) do
-    newAssigns = %{socket.assigns | message: ""}
-    newState = state |> Game.present(newAssigns)
+    newState = state |> Game.present(socket.assigns)
     push(socket, "present", newState)
     {:noreply, socket}
   end
