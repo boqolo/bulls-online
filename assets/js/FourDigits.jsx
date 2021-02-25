@@ -1,5 +1,5 @@
 import React from "react";
-import { ch_join, ch_register, ch_leave, ch_guess, ch_toggle_observer, ch_reset, ch_validate, ch_toggle_ready } from "./socket";
+import { ch_init, ch_join, ch_leave, ch_guess, ch_toggle_observer, ch_reset, ch_validate, ch_toggle_ready } from "./socket";
 
 function Register({message}) {
     const [gameName, setGameName] = React.useState("");
@@ -16,27 +16,32 @@ function Register({message}) {
      */
     function pressedEnter(ev) {
         if (ev.key === "Enter" && gameName && playerName) {
-            ch_register({gameName: gameName, playerName: playerName});
+            ch_join({gameName: gameName, playerName: playerName});
         }
     }
 
-    return (<div className="register-container">
-              <h2>Enter a game name:</h2>
-              <div className={"input-container"}>
-                <input type={"text"} value={gameName} autoFocus={false}
-                       onChange={ev => handleKey(ev, setGameName)}></input>
-                <h2>Enter your name:</h2>
-                <input type={"text"} value={playerName} autoFocus={false}
-                       onChange={ev => handleKey(ev, setPlayerName)} onKeyPress={pressedEnter}>
-                </input>
-              </div>
-              <div className={"buttons-container"}>
-                <button className={"pure-button pure-button-primary"}
-                        disabled={!(gameName && playerName)}
-                        onClick={() => ch_register({gameName: gameName, playerName: playerName})}>Submit
-                </button>
-              </div>
-            </div>);
+    return (
+      <div>
+        <div className="register-container">
+          <h2>Enter a game name:</h2>
+          <div className={"input-container"}>
+            <input type={"text"} value={gameName} autoFocus={false}
+                   onChange={ev => handleKey(ev, setGameName)}></input>
+            <h2>Enter your name:</h2>
+            <input type={"text"} value={playerName} autoFocus={false}
+                   onChange={ev => handleKey(ev, setPlayerName)} onKeyPress={pressedEnter}>
+            </input>
+          </div>
+          <div className={"buttons-container"}>
+            <button className={"pure-button pure-button-primary"}
+                    disabled={!(gameName && playerName)}
+                    onClick={() => ch_join({gameName: gameName, playerName: playerName})}>Submit
+            </button>
+          </div>
+        </div>
+        {message && <div className={"register-message"}>{message}</div>}
+      </div>
+    );
 }
 
 function GuessControls({
@@ -290,7 +295,7 @@ export default function FourDigits() {
      * Set channel callback.
      */
     React.useEffect(function() {
-        ch_join(setState);
+        ch_init(setState);
     }, []);
 
     function pressKey(inputValue) {

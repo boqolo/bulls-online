@@ -37,29 +37,50 @@ function serverUpdate(state) {
 * This sets the app state callbacks up with socket events.
 * This will be called by the app when it loads.
 */
-export function ch_join(setState) {
+export function ch_init(setState) {
     appStateCallback = setState;
     if (appState) {
         appStateCallback(appState);
     }
 }
 
+let channel;
+export function ch_join(names) {
+  const {gameName, playerName} = names;
+  channel = socket.channel("game:".concat(gameName), {});
+  channel.join()
+    .receive("ok", () => ch_register(names))
+    .receive("error", resp => { console.log("Unable to join channel", resp); });
+  // Trigger presentation callback on server events (broadcasts)
+  channel.on("present", serverUpdate);
+}
+
+function ch_register(names) {
+    channel.push("register", names)
+      .receive("ok", serverUpdate)
+      .receive("error", resp => {
+        serverUpdate(resp);
+        channel.leave().receive("ok", (resp) => {});
+        channel = null;
+      });
+}
+
 // Now that you are connected, you can join channels with a topic:
 // let channel = socket.channel("topic:subtopic", {})
-let channel = socket.channel("game:1", {});
-channel.join()
+let channel0 = socket.channel("init", {});
+
+channel0.join()
     .receive("ok", serverUpdate)
     .receive("error", resp => { console.log("Unable to join channel", resp); });
 
-// Trigger presentation callback on server events (broadcasts)
-channel.on("present", serverUpdate);
-
-export function ch_register(names) {
-    channel.push("register", names).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
-}
-
 export function ch_leave(playerName) {
-    channel.push("leave", playerName).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+    channel.push("leave", playerName)
+      .receive("ok", resp => {
+        serverUpdate(resp);
+        channel.leave().receive("ok", (resp) => {});
+        channel = null;
+      })
+      .receive("error", resp => console.log(resp));
 }
 
 export function ch_toggle_ready(playerName) {

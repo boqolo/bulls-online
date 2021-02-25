@@ -19,10 +19,14 @@ defmodule BullsWeb.GameChannel do
   @impl true
   def handle_in("register", %{"gameName" => gname, "playerName" => pname} = _args, socket0) do
     Logger.debug("REGISTER: " <> inspect(socket0))
+    pname = String.trim(pname)
+    gname = String.trim(gname)
 
-    if validName?(pname) do
-      GameServer.start(gname)
-      pname = String.trim(pname)
+    if validName?(gname) && validName?(pname) do
+      # TODO not always starting a new game
+      # TODO add topic to game state
+      noGameServerRunning? = Registry.lookup(Bulls.GameRegistry, gname) == []
+      if noGameServerRunning?, do: GameServer.start(gname)
       GameServer.addPlayer(gname, pname)
 
       socket1 =
@@ -32,17 +36,29 @@ defmodule BullsWeb.GameChannel do
         |> assign(inputValue: "")
         |> assign(message: "Welcome " <> pname <> "! Play or observe. Click ready to start.")
 
-      game = GameServer.peek(gname) |> Game.present(socket1.assigns)
+      game = 
+        GameServer.peek(gname)
+        |> Game.present(socket1.assigns)
 
       {:reply, {:ok, game}, socket1}
     else
       # {status, {status response}, socketConn}
-      {:noreply, socket0}
+      # # TODO send error
+      socket1 =
+        socket0
+        |> assign(message: "Invalid game or player name. Try again.")
+
+      game = 
+        Game.newEmpty()
+        |> Game.present(socket1.assigns)
+
+      {:reply, {:error, game}, socket1}
     end
   end
 
   @impl true
   def handle_in("leave", playerName, socket0) do
+    # TODO send close channel connection  message
     gname = socket0.assigns.gameName
     GameServer.removePlayer(gname, playerName)
 
@@ -50,6 +66,7 @@ defmodule BullsWeb.GameChannel do
       socket0
       |> assign(gameName: "")
       |> assign(playerName: "")
+      |> assign(message: "")
 
     state = 
       Game.newEmpty()

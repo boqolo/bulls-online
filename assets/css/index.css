@@ -128,6 +128,19 @@ input:focus {
     box-shadow: 4px 4px 10px var(--just-about-black);
 }
 
+.register-message {
+  background-color: var(--banana);
+  border-color: #bce8f1;
+  color: var(--near-black);
+  border-radius: 5px;
+  font-size: 1.2em;
+  padding: 2% 3%;
+  text-align: center;
+  width: 30%;
+  min-width: 300px;
+  margin: 2% auto 0;
+}
+
 .input-container {
     border-radius: 10px;
     margin: 5% 0;

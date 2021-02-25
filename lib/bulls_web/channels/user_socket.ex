@@ -10,6 +10,7 @@ defmodule BullsWeb.UserSocket do
   # match on Topic strings and dispatch to the
   # given Channel module.
   channel "game:*", BullsWeb.GameChannel
+  channel "init", BullsWeb.InitChannel
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After

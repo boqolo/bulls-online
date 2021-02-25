@@ -40,13 +40,9 @@ defmodule Bulls.Game do
   Embellish the shared game state with connection state to 
   present to the end user.
   """
-  def present(state, %{playerName: pname, gameName: gname, inputValue: iv, message: msg} = _assigns) do
-    {_, sanitizedState} = Map.pop(state, :answer)
-    sanitizedState
-    |> Map.put(:playerName, pname)
-    |> Map.put(:gameName, gname)
-    |> Map.put(:inputValue, iv)
-    |> Map.put(:message, msg)
+  def present(game, assigns) do
+    {_, sanitizedState} = Map.pop(game, :answer)
+    Map.merge(sanitizedState, assigns)
   end
 
   def beginGame(game) do
