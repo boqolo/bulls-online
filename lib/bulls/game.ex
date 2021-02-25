@@ -99,10 +99,15 @@ defmodule Bulls.Game do
     end
   end
 
-  def addPlayer(%{history: history, players: players} = game, playerName) do
+  def addPlayer(%{history: history, players: players, gamePhase: gamePhase} = game, playerName) do
     unless duplicateName?(players, playerName) do
       newHistory = Map.put(history, playerName, %{})
-      newPlayers = Map.put(players, playerName, ["player", "unready"])
+      newPlayerStatus = if gamePhase != "lobby" do
+        ["observer", "ready"]
+      else
+        ["player", "unready"]
+      end
+      newPlayers = Map.put(players, playerName, newPlayerStatus)
       %{game | history: newHistory, players: newPlayers}
       else
       # Append a random number to name if taken
