@@ -4,79 +4,78 @@
 @import "../node_modules/purecss/build/buttons-min.css";
 
 :root {
-    --just-about-black: #2b2a2a;
-    --near-black: #2e3440;
-    --greyish: #434c5e;
-    --whale-blue: #5e81ac;
-    --whiteish: #e5e9f0;
-    --banana: #ebcb8b;
-    --green: #a3be8c;
-    --red: #bf616a;
+  --just-about-black: #2b2a2a;
+  --near-black: #2e3440;
+  --greyish: #434c5e;
+  --whale-blue: #5e81ac;
+  --whiteish: #e5e9f0;
+  --banana: #ebcb8b;
+  --green: #a3be8c;
+  --red: #bf616a;
 }
 
 body {
-    background: var(--near-black);
-    color: var(--whiteish);
-    font-family: "Andale Mono", "Open Sans", Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--near-black);
+  color: var(--whiteish);
+  font-family: "Andale Mono", "Open Sans", Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* PureCSS Grid style compatibility */
 html, button, input, select, textarea,
 .pure-g [class *= "pure-u"] {
-    /* Set your content font stack here: */
-    font-family: "Andale Mono", "Helvetica", sans-serif;
+  /* Set your content font stack here: */
+  font-family: "Andale Mono", "Helvetica", sans-serif;
 }
 
 button {
-    box-shadow: 4px 4px 10px var(--near-black);
+  box-shadow: 4px 4px 10px var(--near-black);
 }
 
 input:focus {
-    outline: none;
-    box-shadow: 0 0 5px var(--whiteish);
+  outline: none;
+  box-shadow: 0 0 5px var(--whiteish);
 }
 
 .header {
-    background: var(--greyish);
-    display: flex;
-    justify-content: flex-start;
-    flex-direction: row;
-    user-select: none;
+  background: var(--greyish);
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row;
+  user-select: none;
+  align-items: center;
+  padding: 1% 0;
+  font-weight: bolder;
 }
 
 .logo {
-    border-radius: 10px;
-    width: 300px;
-    text-align: center;
-    user-select: none;
+  border-radius: 10px;
+  width: 300px;
+  text-align: center;
+  user-select: none;
 }
 
 .status-bar {
-    user-select: none;
-    box-shadow: 4px 4px 10px var(--just-about-black);
-    font-size: 1.75em;
-    background-color: var(--whale-blue);
-    padding: 2% 2%;
-    text-align: center;
-    align-items: center;
-    margin: 0 0 5% 0;
+  user-select: none;
+  box-shadow: 4px 4px 10px var(--just-about-black);
+  font-size: 1.6em;
+  background-color: var(--whale-blue);
+  padding: 1% 1%;
+  text-align: center;
+  align-items: center;
 }
 
 .lobby {
   margin: 5%, 5%;
 }
 
-.lobby-message {
+.game-message {
   background-color: var(--banana);
-  border-color: #bce8f1;
-  color: var(--near-black);
+  color: var(--just-about-black);
   border-radius: 2px;
-  font-size: 0.6em;
-  margin-top: 5%;
-  padding-top: 2%;
-  padding-bottom: 2%;
-  width: 50%;
-  margin: 3% auto 0;
+  font-size: 1.2em;
+  text-align: center;
+  margin: 0 10%;
+  padding: 2%;
 }
 
 .lobby-player {
@@ -99,8 +98,8 @@ input:focus {
 }
 
 .game-title-header {
-    color: var(--red);
-    font-size: 3em;
+  color: var(--red);
+  font-size: 3em;
 }
 
 .game-lobby-header {
@@ -111,114 +110,126 @@ input:focus {
 }
 
 .game-won-header {
-    color: var(--green);
+  color: var(--green);
 }
 
 .game-over-header {
-    color: var(--red);
+  color: var(--red);
 }
 
 .register-container {
-    width: 300px;
-    background: var(--greyish);
-    margin: 5% auto;
-    padding: 1% 5% 2%;
-    border-radius: 10px;
-    user-select: none;
-    box-shadow: 4px 4px 10px var(--just-about-black);
-}
-
-.register-message {
-  background-color: var(--banana);
-  border-color: #bce8f1;
-  color: var(--near-black);
-  border-radius: 5px;
-  font-size: 1.2em;
-  padding: 2% 3%;
-  text-align: center;
-  width: 30%;
-  min-width: 300px;
-  margin: 2% auto 0;
+  width: 300px;
+  background: var(--greyish);
+  margin: 5% auto;
+  padding: 1% 5% 2%;
+  border-radius: 10px;
+  user-select: none;
+  box-shadow: 4px 4px 10px var(--just-about-black);
 }
 
 .input-container {
-    border-radius: 10px;
-    margin: 5% 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
+  border-radius: 10px;
+  background-color: var(--whale-blue);
+  padding: 5% 5%;
+  margin: 15% 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+.players-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.lobby-buttons-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 5% 0;
+  font-size: 1.4em;
+}
+
+.lobby-button {
+  margin-bottom: 1%;
 }
 
 .buttons-container {
-    display: flex;
-    justify-content: space-evenly;
-    font-size: 1.4em;
+  display: flex;
+  justify-content: space-evenly;
+  font-size: 1.4em;
 }
 
 .button-main-restart-container {
-    display: flex;
+  display: flex;
 }
 
 .button-main-restart {
-    margin: 0 auto;
-    color: var(--whiteish);
-    width: 30%;
-    background: none;
-    box-shadow: none;
+  margin: 0 auto;
+  color: var(--whiteish);
+  width: 30%;
+  background: none;
+  box-shadow: none;
+  font-size: 1.2em;
 }
 
 .button-main-restart:hover {
-    background: none;
-    text-decoration: line-through;
-    color: var(--red);
+  background: none;
+  text-decoration: line-through;
+  color: var(--red);
 }
 
 .button-main-restart:active {
-    background: none;
-    border: none;
-    outline: none;
-    box-shadow: none;
+  background: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
 }
 
 .guesses-container {
-    margin: 5% 0;
+  margin: 5% 0;
+  padding: 0 5%;
+  text-align: center;
 }
 
 .guess-field {
-    border: 1px dotted var(--whiteish);
-    border-radius: 10px;
-    margin: 0 0 5%;
-    font-size: 4.2em;
-    text-align: center;
-    letter-spacing: 2px;
+  border: 1px dotted var(--whiteish);
+  border-radius: 10px;
+  margin: 0 0 5%;
+  font-size: 4.2em;
+  text-align: center;
+  letter-spacing: 2px;
 }
 
 .guess-list {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    margin: 5% auto;
-    padding: 0 0 0;
-    text-align: center;
-    font-size: 1.2em;
-    font-weight: lighter;
-    color: var(--banana);
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 0 0 0;
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: lighter;
+  color: var(--banana);
+  margin: 5% 0;
 }
 
 .guess-list-label {
-    font-weight: normal;
-    font-size: 1.4em;
-    color: var(--banana);
-    text-decoration: underline;
+  font-weight: normal;
+  font-size: 1.4em;
+  color: var(--banana);
+  text-decoration: underline;
+  margin: 3% auto;
 }
 
 .guess-item {
-    margin: 0 0 2%;
-    flex: 1;
+  margin: 0 0 2%;
+  flex: 1;
 }
 
 @media only screen and (max-width: 800px) {
-    .game-container {
-       width: 300px;
-    }
+  .game-container {
+    width: 300px;
+  }
 }

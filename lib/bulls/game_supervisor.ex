@@ -13,7 +13,6 @@ defmodule Bulls.GameSupervisor do
   end
 
   def init(_opts) do
-    # The Supervisor starts the Registry of GameServer Processes
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 
