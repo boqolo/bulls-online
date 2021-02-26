@@ -6,7 +6,7 @@ function Register({message}) {
   const [playerName, setPlayerName] = React.useState("");
 
   function handleJoin(gname, pname) {
-    ch_join({gameName: gname, playerName: pname});
+    ch_join({gameName: gname.trim(), playerName: pname.trim()});
   }
 
   function handleKey(ev, setter) {

@@ -19,8 +19,6 @@ defmodule BullsWeb.GameChannel do
   @impl true
   def handle_in("register", %{"gameName" => gname, "playerName" => pname} = _args, socket0) do
     Logger.debug("REGISTER: " <> inspect(socket0))
-    pname = String.trim(pname)
-    gname = String.trim(gname)
 
     if validName?(gname) && validName?(pname) do
       # TODO not always starting a new game
@@ -184,8 +182,8 @@ defmodule BullsWeb.GameChannel do
     {:noreply, socket}
   end
 
-  defp validName?(playerName) do
-    String.length(playerName) > 0 && String.valid?(playerName) && String.length(playerName) < 10
+  defp validName?(name) do
+    String.length(name) > 0 && String.valid?(name) && String.length(name) < 10
   end
 
   # Checks if given input string could form a valid guess.

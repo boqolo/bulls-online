@@ -27,21 +27,21 @@ const counter = (function () {
 
 function serverUpdate(state) {
   console.log("Received server update", counter(), state);
-    appState = state;
-    if (appStateCallback) {
-        appStateCallback(appState);
-    }
+  appState = state;
+  if (appStateCallback) {
+    appStateCallback(appState);
+  }
 }
 
 /**
-* This sets the app state callbacks up with socket events.
-* This will be called by the app when it loads.
-*/
+ * This sets the app state callbacks up with socket events.
+ * This will be called by the app when it loads.
+ */
 export function ch_init(setState) {
-    appStateCallback = setState;
-    if (appState) {
-        appStateCallback(appState);
-    }
+  appStateCallback = setState;
+  if (appState) {
+    appStateCallback(appState);
+  }
 }
 
 let channel;
@@ -49,20 +49,22 @@ export function ch_join(names) {
   const {gameName, playerName} = names;
   channel = socket.channel("game:".concat(gameName), {});
   channel.join()
-    .receive("ok", () => ch_register(names))
+    .receive("ok", () => {
+      ch_register(names)
+      // Trigger presentation callback on server events (broadcasts)
+      channel.on("present", serverUpdate);
+    })
     .receive("error", resp => { console.log("Unable to join channel", resp); });
-  // Trigger presentation callback on server events (broadcasts)
-  channel.on("present", serverUpdate);
 }
 
 function ch_register(names) {
-    channel.push("register", names)
-      .receive("ok", serverUpdate)
-      .receive("error", resp => {
-        serverUpdate(resp);
-        channel.leave().receive("ok", (resp) => {});
-        channel = null;
-      });
+  channel.push("register", names)
+  // .receive("ok", serverUpdate)
+    .receive("error", resp => {
+      serverUpdate(resp);
+      channel.leave().receive("ok", (resp) => {});
+      channel = null;
+    });
 }
 
 // Now that you are connected, you can join channels with a topic:
@@ -70,39 +72,39 @@ function ch_register(names) {
 let channel0 = socket.channel("init", {});
 
 channel0.join()
-    .receive("ok", serverUpdate)
-    .receive("error", resp => { console.log("Unable to join channel", resp); });
+  .receive("ok", serverUpdate)
+  .receive("error", resp => { console.log("Unable to join channel", resp); });
 
 export function ch_leave() {
-    channel.push("leave", {})
-      .receive("ok", resp => {
-        serverUpdate(resp);
-        channel.leave().receive("ok", (resp) => {});
-        channel = null;
-      })
-      .receive("error", resp => console.log(resp));
+  channel.push("leave", {})
+    .receive("ok", resp => {
+      serverUpdate(resp);
+      channel.leave().receive("ok", (resp) => {});
+      channel = null;
+    })
+    .receive("error", resp => console.log(resp));
 }
 
 export function ch_toggle_ready() {
-    channel.push("toggle_ready", {}).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+  channel.push("toggle_ready", {}).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }
 
 export function ch_toggle_observer() {
-    channel.push("toggle_observer", {}).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+  channel.push("toggle_observer", {}).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }
 
 export function ch_guess(guess) {
-    channel.push("guess", guess).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+  channel.push("guess", guess).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }
 
 export function ch_skip_guess() {
-    channel.push("skip_guess", {}).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+  channel.push("skip_guess", {}).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }
 
 export function ch_validate(inputValue) {
-    channel.push("validate", inputValue).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+  channel.push("validate", inputValue).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }
 
 export function ch_reset() {
-    channel.push("reset", {}).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+  channel.push("reset", {}).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }
