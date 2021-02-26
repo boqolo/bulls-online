@@ -113,7 +113,9 @@ defmodule Bulls.Game do
   end
 
   def removePlayer(game, playerName) do
-    Map.drop(game.players, [playerName])
+    # Remove a player from the game but keep them in the 
+    # guess history
+    %{game | players: Map.drop(game.players, [playerName])}
   end
 
   @doc """

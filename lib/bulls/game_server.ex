@@ -29,8 +29,20 @@ defmodule Bulls.GameServer do
     GenServer.call(registry(gameName), {:peek})
   end
 
+  def readyToStart?(gameName) do
+    GenServer.call(registry(gameName), {:readyToStart?})
+  end
+
+  def duplicateGuess?(gameName, playerName, guess) do
+    GenServer.call(registry(gameName), {:duplicateGuess?, playerName, guess})
+  end
+
+  def reset(gameName) do
+    GenServer.call(registry(gameName), {:reset})
+  end
+
   def beginGame(gameName) do
-    GenServer.call(registry(gameName), {:beginGame})
+    GenServer.cast(registry(gameName), {:beginGame})
   end
 
   def addPlayer(gameName, playerName) do
@@ -42,36 +54,24 @@ defmodule Bulls.GameServer do
   end
 
   def toggleReady(gameName, playerName) do
-    GenServer.call(registry(gameName), {:toggleReady, playerName})
+    GenServer.cast(registry(gameName), {:toggleReady, playerName})
   end
 
   def toggleObserver(gameName, playerName) do
-    GenServer.call(registry(gameName), {:toggleObserver, playerName})
-  end
-
-  def readyToStart?(gameName) do
-    GenServer.call(registry(gameName), {:readyToStart?})
-  end
-
-  def duplicateGuess?(gameName, playerName, guess) do
-    GenServer.call(registry(gameName), {:duplicateGuess?, playerName, guess})
+    GenServer.cast(registry(gameName), {:toggleObserver, playerName})
   end
 
   # TODO maybe cast and then broadcast?
   def makeGuess(gameName, playerName, guess) do
-    GenServer.call(registry(gameName), {:guess, gameName, playerName, guess})
-  end
-
-  def reset(gameName) do
-    GenServer.call(registry(gameName), {:reset})
-  end
-
-  defp broadcastAfter(ms) do
-    Process.send_after(self(), :broadcast, ms, [])
+    GenServer.cast(registry(gameName), {:guess, gameName, playerName, guess})
   end
 
   defp sendBroadcast() do
     Process.send(self(), :broadcast, [])
+  end
+
+  defp sendBroadcastAfter(ms) do
+    Process.send_after(self(), :broadcast, ms, [])
   end
 
   # Callbacks
@@ -118,29 +118,8 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
-  def handle_call({:beginGame}, _from, gameState0) do
-    gameState1 = Game.beginGame(gameState0)
-    broadcastAfter(5_000)
-    {:noreply, gameState1}
-  end
-
-  @impl true
-  def handle_call({:toggleReady, playerName}, _from, gameState0) do
-    gameState1 = Game.toggleReady(gameState0, playerName)
-    # FIXME
-    sendBroadcast()
-    {:noreply, gameState1}
-  end
-
-  @impl true
-  def handle_call({:toggleObserver, playerName}, _from, gameState0) do
-    gameState1 = Game.toggleObserver(gameState0, playerName)
-    sendBroadcast()
-    {:noreply, gameState1}
-  end
-
-  @impl true
   def handle_call({:reset, gameName}, _from, gameState0) do
+    # FIXME remove?
     gameState1 = %{Game.new() | players: Map.get(gameState0, "players")}
     GameAgent.put(gameName, gameState1)
     # {:reply, send back, new val to loop with}
@@ -154,8 +133,8 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
-  def handle_call({:guess, _gameName, playerName, guess}, _from, gameState0) do
-    gameState1 = Game.makeGuess(gameState0, guess, playerName)
+  def handle_cast({:addPlayer, _gameName, playerName}, gameState0) do
+    gameState1 = Game.addPlayer(gameState0, playerName)
     # GameAgent.put(gameName, gameState1)
     sendBroadcast()
     {:noreply, gameState1}
@@ -165,16 +144,42 @@ defmodule Bulls.GameServer do
   def handle_cast({:removePlayer, _gameName, playerName}, gameState0) do
     gameState1 = Game.removePlayer(gameState0, playerName)
     # GameAgent.put(gameName, gameState1)
+    Logger.debug("AFTER REMOVE: " <> inspect(gameState1))
     sendBroadcast()
     {:noreply, gameState1}
   end
 
   @impl true
-  def handle_cast({:addPlayer, _gameName, playerName}, gameState0) do
-    gameState1 = Game.addPlayer(gameState0, playerName)
-    # GameAgent.put(gameName, gameState1)
+  def handle_cast({:toggleReady, playerName}, gameState0) do
+    gameState1 = Game.toggleReady(gameState0, playerName)
     sendBroadcast()
     {:noreply, gameState1}
   end
+
+  @impl true
+  def handle_cast({:toggleObserver, playerName}, gameState0) do
+    gameState1 = Game.toggleObserver(gameState0, playerName)
+    sendBroadcast()
+    {:noreply, gameState1}
+  end
+
+  @impl true
+  def handle_cast({:beginGame}, gameState0) do
+    # TODO send alert?? (sendBroadCastAfter)
+    gameState1 = Game.beginGame(gameState0)
+    sendBroadcast()
+    {:noreply, gameState1}
+  end
+
+  @impl true
+  def handle_cast({:guess, _gameName, playerName, guess}, gameState0) do
+    gameState1 = Game.makeGuess(gameState0, guess, playerName)
+    # GameAgent.put(gameName, gameState1)
+    # Set minimal delay to ensure socket state for each player gets
+    # set properly to receive broadcast state
+    sendBroadcastAfter(500)
+    {:noreply, gameState1}
+  end
+
 
 end
