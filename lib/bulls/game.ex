@@ -14,12 +14,12 @@ defmodule Bulls.Game do
   """
   def new(gameName \\ "") do
     %{
-      # TODO add topic/game name
       gameName: gameName,
       answer: create4Digits(),
       gamePhase: "lobby",
       # String (playerName) -> guessHistory
       history: %{},
+      # String (playerName) -> ["player" | "observer", "ready" | "unready"]
       players: %{},
       gameWon: false
     }
@@ -46,8 +46,9 @@ defmodule Bulls.Game do
     Map.merge(assigns, sanitizedState) # Game messages overwrite user ones
   end
 
-  def beginGame(game) do
-    %{game | gamePhase: "playing"}
+  def beginGame(%{players: players} = game) do
+    newPlayers = setAllPlayersUnready(players)
+    %{game | gamePhase: "playing", players: newPlayers}
   end
 
   def toggleReady(%{players: players} = game, playerName) do
@@ -92,6 +93,7 @@ defmodule Bulls.Game do
       newPlayerHistory = 
         Map.put(prevGuesses, guessNumber, [guess, bulls, cows])
       newHistory = Map.put(history, playerName, newPlayerHistory)
+
       %{game | history: newHistory}
     end
   end
@@ -131,10 +133,14 @@ defmodule Bulls.Game do
     end
   end
 
-  def readyToStart?(%{players: players} = _game) do
+  def readyToAdvance?(%{players: players} = _game) do
     Map.values(players)
     |> Enum.map(fn(status) -> List.last(status) end)
     |> Enum.all?(fn(readiness) -> readiness == "ready" end)
+  end
+
+  def makePlayerReady(%{players: players} = game, playerName) do
+    %{game | players: setPlayerReadiness(players, playerName, "ready")}
   end
 
   @doc """
@@ -161,6 +167,11 @@ defmodule Bulls.Game do
     |> Enum.any?(fn(name) -> name == playerName end)
   end
 
+  def setPlayerReadiness(players, playerName, readiness) do
+    players
+    |> Map.put(playerName, ["player", readiness])
+  end  
+
   @doc """
   Calculate the number of correct digits in the guess from the answer.
   """
@@ -180,6 +191,12 @@ defmodule Bulls.Game do
   def numCows(guess, answer) do
     Enum.count(guess, fn d -> Enum.member?(answer, d) end)
   end
+
+  def setAllPlayersUnready(players) do
+    # Credit: https://stackoverflow.com/questions/26614682/how-to-change-all-the-values-in-an-elixir-map
+    for {name, _} <- players, into: %{}, do: {name, ["player", "unready"]}
+  end
+
 end
 
 # end module

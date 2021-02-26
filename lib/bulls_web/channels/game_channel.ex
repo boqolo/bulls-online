@@ -55,10 +55,9 @@ defmodule BullsWeb.GameChannel do
   end
 
   @impl true
-  def handle_in("leave", playerName, socket0) do
-    # TODO send close channel connection  message
-    gname = socket0.assigns.gameName
-    GameServer.removePlayer(gname, playerName)
+  def handle_in("leave", _payload, socket0) do
+    %{gameName: gname, playerName: pname} = socket0.assigns
+    GameServer.removePlayer(gname, pname)
 
     socket1 =
       socket0
@@ -74,11 +73,11 @@ defmodule BullsWeb.GameChannel do
   end
 
   @impl true
-  def handle_in("toggle_ready", playerName, socket0) do
-    gname = socket0.assigns.gameName
-    GameServer.toggleReady(gname, playerName)
+  def handle_in("toggle_ready", _payload, socket0) do
+    %{gameName: gname, playerName: pname} = socket0.assigns
+    GameServer.toggleReady(gname, pname)
 
-    if GameServer.readyToStart?(gname) do
+    if GameServer.readyToAdvance?(gname) do
       GameServer.beginGame(gname)
       {:noreply, socket0}
     else
@@ -91,9 +90,9 @@ defmodule BullsWeb.GameChannel do
   end
 
   @impl true
-  def handle_in("toggle_observer", playerName, socket0) do
-    gname = socket0.assigns.gameName
-    GameServer.toggleObserver(gname, playerName)
+  def handle_in("toggle_observer", _payload, socket0) do
+    %{gameName: gname, playerName: pname} = socket0.assigns
+    GameServer.toggleObserver(gname, pname)
     formatStr = fn(role) -> if role == "player" do
         "a player" 
       else 
@@ -104,7 +103,7 @@ defmodule BullsWeb.GameChannel do
     newRole = 
       GameServer.peek(gname)
       |> Map.get(:players)
-      |> Map.get(playerName)
+      |> Map.get(pname)
       |> List.first()
       |> formatStr.()
 
@@ -123,16 +122,29 @@ defmodule BullsWeb.GameChannel do
     socket1 =
       unless GameServer.duplicateGuess?(gname, pname, guess) do
         GameServer.makeGuess(gname, pname, guess)
+        GameServer.makePlayerReady(gname, pname)
 
         # remove user message
         socket0
         |> assign(message: "")
-        |> assign(inputValue: "")
       else
         # add user message
         socket0 
         |> assign(message: "You've already made this guess.")
       end
+
+    {:noreply, socket1}
+  end
+
+  @impl true
+  def handle_in("skip_guess", _payload, socket0) do
+    %{gameName: gname, playerName: pname} = socket0.assigns
+    GameServer.makePlayerReady(gname, pname)
+
+    # delete input
+    socket1 =
+      socket0
+      |> assign(inputValue: "")
 
     {:noreply, socket1}
   end

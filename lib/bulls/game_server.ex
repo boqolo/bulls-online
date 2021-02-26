@@ -29,8 +29,8 @@ defmodule Bulls.GameServer do
     GenServer.call(registry(gameName), {:peek})
   end
 
-  def readyToStart?(gameName) do
-    GenServer.call(registry(gameName), {:readyToStart?})
+  def readyToAdvance?(gameName) do
+    GenServer.call(registry(gameName), {:readyToAdvance?})
   end
 
   def duplicateGuess?(gameName, playerName, guess) do
@@ -61,18 +61,21 @@ defmodule Bulls.GameServer do
     GenServer.cast(registry(gameName), {:toggleObserver, playerName})
   end
 
-  # TODO maybe cast and then broadcast?
   def makeGuess(gameName, playerName, guess) do
     GenServer.cast(registry(gameName), {:guess, gameName, playerName, guess})
+  end
+
+  def makePlayerReady(gameName, playerName) do
+    GenServer.cast(registry(gameName), {:makePlayerReady, gameName, playerName})
   end
 
   defp sendBroadcast() do
     Process.send(self(), :broadcast, [])
   end
 
-  defp sendBroadcastAfter(ms) do
-    Process.send_after(self(), :broadcast, ms, [])
-  end
+  # defp sendBroadcastAfter(ms) do
+  #   Process.send_after(self(), :broadcast, ms, [])
+  # end
 
   # Callbacks
   # These correspond with Client API `call`s
@@ -112,8 +115,8 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
-  def handle_call({:readyToStart?}, _from, gameState0) do
-    ready? = Game.readyToStart?(gameState0)
+  def handle_call({:readyToAdvance?}, _from, gameState0) do
+    ready? = Game.readyToAdvance?(gameState0)
     {:reply, ready?, gameState0}
   end
 
@@ -177,9 +180,14 @@ defmodule Bulls.GameServer do
     # GameAgent.put(gameName, gameState1)
     # Set minimal delay to ensure socket state for each player gets
     # set properly to receive broadcast state
-    sendBroadcastAfter(500)
     {:noreply, gameState1}
   end
 
+  @impl true
+  def handle_cast({:makePlayerReady, _gameName, playerName}, gameState0) do
+    gameState1 = Game.makePlayerReady(gameState0, playerName)
+    sendBroadcast()
+    {:noreply, gameState1}
+  end
 
 end

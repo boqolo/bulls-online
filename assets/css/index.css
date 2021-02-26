@@ -58,7 +58,7 @@ input:focus {
   user-select: none;
   box-shadow: 4px 4px 10px var(--just-about-black);
   font-size: 1.6em;
-  background-color: var(--whale-blue);
+  background-color: var(--green);
   padding: 1% 1%;
   text-align: center;
   align-items: center;
@@ -102,11 +102,12 @@ input:focus {
   font-size: 3em;
 }
 
-.game-lobby-header {
-  margin: 0 auto;
-  display: flex;
-  flex: 1;
+.register-header {
+  margin: 3% auto;
   text-align: center;
+  color: var(--blue);
+  font-size: 2.0em;
+  font-weight: bold;
 }
 
 .game-won-header {
@@ -120,7 +121,7 @@ input:focus {
 .register-container {
   width: 300px;
   background: var(--greyish);
-  margin: 5% auto;
+  margin: 3% auto;
   padding: 1% 5% 2%;
   border-radius: 10px;
   user-select: none;

@@ -73,8 +73,8 @@ channel0.join()
     .receive("ok", serverUpdate)
     .receive("error", resp => { console.log("Unable to join channel", resp); });
 
-export function ch_leave(playerName) {
-    channel.push("leave", playerName)
+export function ch_leave() {
+    channel.push("leave", {})
       .receive("ok", resp => {
         serverUpdate(resp);
         channel.leave().receive("ok", (resp) => {});
@@ -83,16 +83,20 @@ export function ch_leave(playerName) {
       .receive("error", resp => console.log(resp));
 }
 
-export function ch_toggle_ready(playerName) {
-    channel.push("toggle_ready", playerName).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+export function ch_toggle_ready() {
+    channel.push("toggle_ready", {}).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }
 
-export function ch_toggle_observer(playerName) {
-    channel.push("toggle_observer", playerName).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+export function ch_toggle_observer() {
+    channel.push("toggle_observer", {}).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }
 
 export function ch_guess(guess) {
     channel.push("guess", guess).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
+}
+
+export function ch_skip_guess() {
+    channel.push("skip_guess", {}).receive("ok", serverUpdate).receive("error", resp => console.log(resp));
 }
 
 export function ch_validate(inputValue) {

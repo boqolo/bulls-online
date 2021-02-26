@@ -1,5 +1,5 @@
 import React from "react";
-import { ch_init, ch_join, ch_leave, ch_guess, ch_toggle_observer, ch_reset, ch_validate, ch_toggle_ready } from "./socket";
+import { ch_init, ch_skip_guess, ch_join, ch_leave, ch_guess, ch_toggle_observer, ch_reset, ch_validate, ch_toggle_ready } from "./socket";
 
 function Register({message}) {
   const [gameName, setGameName] = React.useState("");
@@ -26,7 +26,7 @@ function Register({message}) {
 
   return (
     <div>
-      <h1>Start or Join a game!</h1>
+      <div className={"register-header"}>Start or Join a game!</div>
       <div className="register-container">
         <h2>Enter a game name</h2>
         <input type={"text"} value={gameName} autoFocus={false}
@@ -51,21 +51,32 @@ function Register({message}) {
 
 function GuessControls({
   inputValue,
-  inputHandler,
-  submitHandler,
-  canSubmit
+  canSubmit,
+  hasSubmitted
 }) {
+
+  function handleKey(inputValue) {
+    ch_validate(inputValue);
+  }
+
+  function handleSubmit(guess) {
+    ch_guess(guess);
+  }
+
+  function handleSkipGuess() {
+    ch_skip_guess();
+  }
 
   /**
    * Push input changes server-side for validation.
    * @param ev Keyboard event
    */
   function setTextInput(ev) {
-      const newInputValue = ev.target.value;
-      // send what the updated input would look like. server
-      // will either accept or reject changes.
+    const newInputValue = ev.target.value;
+    // send what the updated input would look like. server
+    // will either accept or reject changes.
     // // TODO ch_validate
-      inputHandler(newInputValue);
+    handleKey(newInputValue);
   }
 
   /**
@@ -74,23 +85,33 @@ function GuessControls({
    */
   function pressedEnter(ev) {
     if (ev.key === "Enter" && canSubmit) {
-      submitHandler(inputValue);
+      handleSubmit(inputValue);
     }
   }
 
   return (
     <div className={"input-container"} role={"group"}>
-      <input className={"guess-field"} type={"text"} value={inputValue}
+      <input className={"guess-field"}
+             type={"text"}
+             value={inputValue}
+             disabled={hasSubmitted}
              onKeyPress={pressedEnter}
              autoFocus={false}
              onChange={setTextInput}/>
       <div className={"buttons-container"}>
         <button className={"pure-button"}
-                onClick={() => inputHandler("")}>Clear
+                onClick={() => handleKey("")}>
+          Clear
         </button>
         <button className={"pure-button pure-button-primary"}
                 disabled={!canSubmit}
-                onClick={() => submitHandler(inputValue)}>Submit
+                onClick={() => handleSubmit(inputValue)}>
+          Submit
+        </button>
+        <button className={"pure-button"}
+                disabled={hasSubmitted}
+                onClick={handleSkipGuess}>
+          Skip
         </button>
       </div>
     </div>
@@ -177,38 +198,34 @@ function Lobby({
   playerName,
   gameName, 
   players,
-  allNames,
-  playerNames,
-  readyPlayers
 }) {
 
-  // players is {playerName (string): ["player" | "observer", "ready" | "unready"]
+  const allNames = Object.keys(players);
+  const playerNames = allNames.filter(name => 
+    players[name][0] === "player");
+  const readyPlayers = playerNames.filter(name => 
+    players[name][1] === "ready");
   const playerReady = players[playerName][1] === "ready";
   const isObserver = players[playerName][0] === "observer";
-  // TODO back button, 
 
-  function handleReadiness(playerName) {
-    ch_toggle_ready(playerName);
+  function handleReadiness() {
+    ch_toggle_ready();
   }
 
-  function handleObserve(playerName) {
-    ch_toggle_observer(playerName);
-  }
-
-  function handleLeave(playerName) {
-    ch_leave(playerName);
+  function handleObserve() {
+    ch_toggle_observer();
   }
 
   const readinessButton = (playerReady) => {
     let btn;
     if (playerReady) {
       btn = <button className={"pure-button unready-button"}
-                     onClick={() => handleReadiness(playerName)}>
+                     onClick={handleReadiness}>
               Unready
              </button>
     } else {
       btn = <button className={"pure-button pure-button-primary ready-button"}
-                    onClick={() => handleReadiness(playerName)}>
+                    onClick={handleReadiness}>
               Ready
             </button>
     }
@@ -219,12 +236,12 @@ function Lobby({
     let btn;
     if (isObserver) {
       btn = <button className={"pure-button toggle-player-button"}
-                    onClick={() => handleObserve(playerName)}>
+                    onClick={handleObserve}>
               Become Player
             </button>
     } else {
       btn = <button className={"pure-button toggle-observer-button"}
-                    onClick={() => handleObserve(playerName)}>
+                    onClick={handleObserve}>
               Become Observer
             </button>
     }
@@ -242,7 +259,7 @@ function Lobby({
         </div>
         <div className={"pure-u-1-3 lobby-buttons-container"}>
           <div className={"lobby-button"}>
-            {readinessButton(playerReady)}
+            {!isObserver && readinessButton(playerReady)}
           </div>
           <div className={"lobby-button"}>
             {observerButton(isObserver)}
@@ -255,23 +272,38 @@ function Lobby({
 
 function GameRoom({
   inputValue,
+  playerName,
+  players,
   history,
-  allNames,
-  playerNames,
-  readyPlayers,
   gameWon,
 }) {
 
   const MAX_DIGITS = 4;
+  const allNames = Object.keys(players);
+  const playerNames = allNames.filter(name => 
+    players[name][0] === "player");
+  const readyPlayers = playerNames.filter(name => 
+    players[name][1] === "ready");
   const canSubmit = inputValue.length === MAX_DIGITS;
+  const playerReady = players[playerName][1] === "ready";
+  const isPlayer = players[playerName][0] === "player";
 
-  function pressKey(inputValue) {
-    ch_validate(inputValue);
-  }
-
-  function submitGuess(guess) {
-    ch_guess(guess);
-  }
+  const playerView = (playerReady) => {
+    let view;
+    if (playerReady) {
+      view = <>
+               <h2>Waiting for players...</h2>
+               <div>Some are still guessing</div>
+             </>
+    } else {
+      view = <GuessControls 
+              inputValue={inputValue}
+              canSubmit={canSubmit}
+              hasSubmitted={playerReady}
+             />
+    }
+    return view;
+  };
 
   return (
     <div className={"game-container pure-g"}>
@@ -282,10 +314,12 @@ function GameRoom({
         />
       </div>
       <div className={"pure-u-1-3"}>
-        <GuessControls inputValue={inputValue}
-                      inputHandler={pressKey}
-                      submitHandler={submitGuess}
-                      canSubmit={canSubmit}/>
+        {isPlayer ? 
+          playerView(playerReady)
+          : <>
+              <h2>Observing game...</h2>
+              <div>You may join the next round if you like</div>
+            </>}
       </div>
       <div className={"pure-u-1-3"}>
         <History guesses={history}/>
@@ -313,8 +347,8 @@ function Game({state}) {
   const readyPlayers = playerNames.filter(name => 
     players[name][1] === "ready");
 
-  function handleLeave(playerName) {
-    ch_leave(playerName);
+  function handleLeave() {
+    ch_leave();
   }
   
   let body;
@@ -326,20 +360,16 @@ function Game({state}) {
             playerName={playerName}
             gameName={gameName}
             players={players}
-            allNames={allNames}
-            playerNames={playerNames}
-            readyPlayers={readyPlayers}
           />    
   } else if (gamePhase == "endgame") {
     // TODO maybe not needed
   } else { // gamePhase === "playing"
     body = <GameRoom 
             inputValue={inputValue}
+            playerName={playerName}
+            players={players}
             history={history}
             gameWon={gameWon} 
-            allNames={allNames}
-            playerNames={playerNames}
-            readyPlayers={readyPlayers}
           />
   }
 
@@ -352,7 +382,7 @@ function Game({state}) {
         </div>
       </div>
       <button className={"pure-button button-main-restart"}
-              onClick={() => handleLeave(playerName)}>
+              onClick={handleLeave}>
         &lt; Leave game
       </button>
       {body}
@@ -370,7 +400,8 @@ export default function FourDigits() {
     gamePhase: "",
     inputValue: "",
     history: {},
-    players: {},
+    // {playerName (string): ["player" | "observer", "ready" | "unready"]
+    players: {}, 
     gameWon: false,
     message: ""
   });
