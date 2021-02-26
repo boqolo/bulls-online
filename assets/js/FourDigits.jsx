@@ -108,16 +108,16 @@ function PlayerHistory({player, guessHistory}) {
               {player}
             </div>
             <div className={"pure-u-1-5"}>
-              G #
+              {`#${parseInt(n) + 1}`}
             </div>
             <div className={"pure-u-1-5"}>
-              Guess
+              {guessHistory[n][0]}
             </div>
             <div className={"pure-u-1-5"}>
-              Bulls
+              B: {guessHistory[n][1]}
             </div>
             <div className={"pure-u-1-5"}>
-              Cows
+              C: {guessHistory[n][2]}
             </div>
           </div>
         </div>
@@ -128,16 +128,16 @@ function PlayerHistory({player, guessHistory}) {
 
 function History({guesses}) {
 
-    return (
-      <div className={"guesses-container"}>
-        <label className={"guess-list-label"}>Guesses:</label>
-        <div className={"guess-list"}>
-          {Object.keys(guesses).map(player =>
-            <PlayerHistory key={player} player={player} guessHistory={guesses[player]} />
-          )}
-        </div>
+  return (
+    <div className={"guesses-container"}>
+      <label className={"guess-list-label"}>Guesses:</label>
+      <div className={"guess-list"}>
+        {Object.keys(guesses).map(player =>
+          <PlayerHistory key={player} player={player} guessHistory={guesses[player]} />
+        )}
       </div>
-    );
+    </div>
+  );
 }
 
 function GameOver({restartGame}) {
