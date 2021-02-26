@@ -31,3 +31,6 @@ and then
   * Docs: https://hexdocs.pm/phoenix
   * Forum: https://elixirforum.com/c/phoenix-forum
   * Source: https://github.com/phoenixframework/phoenix
+
+### Misc
+  - mix release.init to get config files for app release
