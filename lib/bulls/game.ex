@@ -49,7 +49,7 @@ defmodule Bulls.Game do
     sanitizedState = Map.drop(game, [:answer, :round, :numPlayers])
     Logger.debug("PRESENTING: " <> inspect(sanitizedState))
     Map.merge(assigns, sanitizedState, fn(k, v1, v2) -> if k == :message, 
-      do: unless(v2 == "", do: v2, else: v1),
+      do: if(v2 == "", do: v1, else: v2),
       else: v2 
     end) # Game messages precede user messages
   end

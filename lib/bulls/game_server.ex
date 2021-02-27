@@ -115,12 +115,19 @@ defmodule Bulls.GameServer do
   def handle_info({:timeExpired, guessed}, gameState0) do 
     Logger.debug("\n\n\n\n\nTIMEOUT: " <> inspect(guessed) <> "--" <> inspect(gameState0.numPlayers))
     # if sofar != numPlayers
-    gameState1 = if guessed != gameState0.numPlayers do
+    gameState1 = if guessed != gameState0.numPlayers && gameState0.gamePhase == "playing" do
       Game.setAllPlayerReadiness(gameState0, "ready")
+      |> Game.determineRoundResult()
     else
       gameState0
     end
-    sendBroadcast()
+    Process.send(self(), :advanceGame, [])
+    {:noreply, gameState1}
+  end
+
+  @impl true
+  def handle_info(:clearMessage, gameState0) do 
+    gameState1 = Game.setMessage(gameState0, "")
     {:noreply, gameState1}
   end
 
@@ -131,7 +138,7 @@ defmodule Bulls.GameServer do
       "lobby" -> gameState0
         |> Game.setGamePhase("playing")
         |> Game.setAllPlayerReadiness("unready")
-        |> Game.setMessage("")
+        |> Game.setMessage("You have 30 seconds to place a guess.")
       "endgame" -> gameState0
         |> Game.setGamePhase("lobby")
         |> Game.setAllPlayerReadiness("unready")
@@ -141,6 +148,7 @@ defmodule Bulls.GameServer do
         |> Game.setMessage("You have 30 seconds to place a guess.")
     end
     Process.send_after(self(), {:timeExpired, Enum.count(Map.keys(gameState1.round))}, @guessTime, [])
+    Process.send_after(self(), :clearMessage, 5_000, [])
     # Set minimal delay to ensure socket state for each player gets
     # set properly to receive broadcast state
     sendBroadcastAfter(5_00)

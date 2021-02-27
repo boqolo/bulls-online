@@ -123,26 +123,32 @@ defmodule BullsWeb.GameChannel do
     %{gameName: gname, playerName: pname} = socket0.assigns
     guess = parseGuess(guessStr)
 
-    socket1 =
-      unless GameServer.duplicateGuess?(gname, pname, guess) do
-        GameServer.makeGuess(gname, pname, guess)
-        GameServer.setPlayerReadiness(gname, pname, "ready")
-        if GameServer.readyToAdvance?(gname) do
-          GameServer.determineRoundResult(gname)
-          GameServer.advanceGame(gname)
-        end
+    unless GameServer.duplicateGuess?(gname, pname, guess) do
+      GameServer.makeGuess(gname, pname, guess)
+      GameServer.setPlayerReadiness(gname, pname, "ready")
+      if GameServer.readyToAdvance?(gname) do
+        GameServer.determineRoundResult(gname)
+        GameServer.advanceGame(gname)
+      end
 
-        # remove user input + message
+      # remove user input + message
+      socket1 = 
         socket0
         |> assign(inputValue: "")
         |> assign(message: "")
-      else
-        # add user message
+      {:noreply, socket1}
+    else
+      # add user message
+      socket1 = 
         socket0 
         |> assign(message: "You've already made this guess.")
-      end
 
-    {:noreply, socket1}
+      game = 
+        GameServer.peek(gname)
+        |> Game.present(socket1.assigns)
+      {:reply, {:ok, game}, socket1}
+    end
+
   end
 
   @impl true
