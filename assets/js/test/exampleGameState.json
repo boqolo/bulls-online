@@ -1,6 +1,11 @@
 {
   playerName: "rayray",
   gameName: "test",
+  scores: {
+    "ray": [1, 0],
+    "melonhead": [0, 3],
+    "turnip": [5, 1]
+  },
   gamePhase: "playing",
   inputValue: "",
   history: {
@@ -63,6 +68,5 @@
     rayk: ["player", "ready"],
     raydizzle: ["observer", "ready"],
   },
-  gameWon: false,
   message: "This is a default message."
 }

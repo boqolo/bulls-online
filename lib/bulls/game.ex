@@ -17,11 +17,16 @@ defmodule Bulls.Game do
       gameName: gameName,
       answer: create4Digits(),
       gamePhase: "lobby",
+      # String (playerName) -> guess
+      round: %{},
       # String (playerName) -> guessHistory
       history: %{},
       # String (playerName) -> ["player" | "observer", "ready" | "unready"]
-      players: %{},
-      gameWon: false
+      players: %{}, # TODO rename to 'users'
+      # String (playerName) -> [wins (Int), losses (Int)]
+      scores: %{},
+      numPlayers: 0,
+      message: "",
     }
   end
 
@@ -33,7 +38,6 @@ defmodule Bulls.Game do
       gamePhase: "",
       history: %{},
       players: %{},
-      gameWon: false
     }
   end
 
@@ -42,13 +46,16 @@ defmodule Bulls.Game do
   present to the end user.
   """
   def present(game, assigns) do
-    {_, sanitizedState} = Map.pop(game, :answer)
-    Map.merge(assigns, sanitizedState) # Game messages overwrite user ones
+    sanitizedState = Map.drop(game, [:answer, :round, :numPlayers])
+    Logger.debug("PRESENTING: " <> inspect(sanitizedState))
+    Map.merge(assigns, sanitizedState, fn(k, v1, v2) -> if k == :message, 
+      do: unless(v2 == "", do: v2, else: v1),
+      else: v2 
+    end) # Game messages precede user messages
   end
 
-  def beginGame(%{players: players} = game) do
-    newPlayers = setAllPlayersUnready(players)
-    %{game | gamePhase: "playing", players: newPlayers}
+  def setMessage(game, message) do
+    %{game | message: message}
   end
 
   def toggleReady(%{players: players} = game, playerName) do
@@ -78,36 +85,120 @@ defmodule Bulls.Game do
   end
 
   @doc """
-  Given a guess, answer, and game state, returns a new game state
-  reflecting the outcome of making the guess on the game if it is
-  invalid, correct, or incorrect.
+  Collect a player's guess for the round.
   """
-  def makeGuess(%{answer: answer, history: history} = game, guess, playerName) do
-    prevGuesses = Map.get(history, playerName)
-    if guess == answer do
-      %{game | gameWon: true}
-    else
-      bulls = numBulls(guess, answer)
-      cows = numCows(guess, answer) - bulls
-      guessNumber = Enum.count(prevGuesses)
-      newPlayerHistory = 
-        Map.put(prevGuesses, guessNumber, [guess, bulls, cows])
-      newHistory = Map.put(history, playerName, newPlayerHistory)
+  def makeGuess(game, playerName, guess) do
+    newRound = Map.put(game.round, playerName, guess)
+    %{game | round: newRound}
+  end
 
-      %{game | history: newHistory}
+  def setGamePhase(game, gamePhase) do
+    %{game | gamePhase: gamePhase}
+  end
+
+  defp determinePlayerResult(playerName, {game, winners} = acc) do
+    Logger.debug("GOT ACC: " <> inspect(acc))
+    %{
+      answer: answer,
+      round: round,
+      players: players,
+      history: history,
+    } = game
+
+    observer? = List.first(Map.get(players, playerName)) == "observer"
+    skippedPlayer? = !Enum.member?(Map.keys(round), playerName)
+    unless observer? || skippedPlayer? do
+      roundGuess = Map.get(round, playerName)
+      correctGuess? = roundGuess == answer
+      newWinners = if correctGuess? do 
+        [playerName] ++ winners
+      else 
+        winners
+      end
+
+      prevGuesses = Map.get(history, playerName)
+      bulls = numBulls(roundGuess, answer)
+      cows = numCows(roundGuess, answer) - bulls 
+      guessNumber = Enum.count(prevGuesses)
+      guessAccuracy = [roundGuess, bulls, cows]
+      newPlayerHistory = Map.put(prevGuesses, guessNumber, guessAccuracy)
+      newHistory = Map.put(history, playerName, newPlayerHistory)
+      newRound = Map.drop(round, [playerName])
+
+      newGame = 
+        game
+        |> Map.put(:history, newHistory)
+        |> Map.put(:round, newRound)
+        |> Map.put(:message, "Nobody guessed correctly. Next round...")
+
+      {newGame, newWinners}
+    else 
+      {game, winners}
     end
   end
 
-  def addPlayer(%{history: history, players: players, gamePhase: gamePhase} = game, playerName) do
+
+  @doc """
+  ADVANCES A ROUND
+  Computes the result of the current round of guesses on the game.
+  Checks for correct guesses, archives the round guesses to the 
+  history along with calculated accuracies, and clears round guesses. 
+  Returns the appropriate game state reflecting aforementioned results.
+  If multiple players make the correct guess in a turn, they are both
+  declared winners.
+  """
+  def determineRoundResult(%{players: players} = game) do
+    # TODO check guess correct, determine accuracies, add guesses to history
+    # # newHistory, remove round guess
+    # FIXME reply
+    
+    # accumulate
+    {game, winners} = List.foldr(Map.keys(players), {game, []}, fn(playerName, acc) -> determinePlayerResult(playerName, acc) end) # (). ???
+
+    gameOver? = Enum.count(winners) > 0
+    if gameOver? do
+      # TODO calcuilate scores, reset game
+      newScores = for {name, [wins, losses]} <- game.scores, into: %{}, do:
+        if Enum.member?(winners, name),
+          do: 
+            {name, [wins + 1, losses]},
+          else:
+            {name, [wins, losses + 1]} 
+          %{game | gamePhase: "endgame", answer: create4Digits(), scores: newScores, history: %{}}
+    else
+      game
+    end
+  end
+
+  def setAllPlayerReadiness(%{players: players} = game, readiness) do
+    # Credit: https://stackoverflow.com/questions/26614682/how-to-change-all-the-values-in-an-elixir-map
+    newPlayers = for {name, [player?, ready?]} <- players, into: %{}, do:
+      if player? == "player", 
+        do: 
+          {name, ["player", readiness]},
+        else:
+          {name, ["observer", ready?]} 
+    %{game | players: newPlayers}
+  end
+
+  def setPlayerReadiness(%{players: players} = game, playerName, readiness) do
+    newPlayers = 
+      players
+      |> Map.put(playerName, ["player", readiness])
+    %{game | players: newPlayers}
+  end
+
+  def addPlayer(%{history: history, players: players, gamePhase: gamePhase, numPlayers: numPlayers, scores: scores} = game, playerName) do
     unless duplicateName?(players, playerName) do
       newHistory = Map.put(history, playerName, %{})
-      newPlayerStatus = if gamePhase != "lobby" do
-        ["observer", "ready"]
+      {newPlayerStatus, incrementPlayers} = if gamePhase != "lobby" do
+        {["observer", "ready"], numPlayers}
       else
-        ["player", "unready"]
+        {["player", "unready"], numPlayers + 1}
       end
       newPlayers = Map.put(players, playerName, newPlayerStatus)
-      %{game | history: newHistory, players: newPlayers}
+      newScores = Map.put(scores, playerName, [0, 0])
+      %{game | history: newHistory, players: newPlayers, numPlayers: incrementPlayers, scores: newScores}
       else
       # Append a random number to name if taken
       addPlayer(game, playerName <> Integer.to_string(:rand.uniform(1000)))
@@ -134,13 +225,10 @@ defmodule Bulls.Game do
   end
 
   def readyToAdvance?(%{players: players} = _game) do
+    # FIXME check only players and not observers
     Map.values(players)
     |> Enum.map(fn(status) -> List.last(status) end)
     |> Enum.all?(fn(readiness) -> readiness == "ready" end)
-  end
-
-  def makePlayerReady(%{players: players} = game, playerName) do
-    %{game | players: setPlayerReadiness(players, playerName, "ready")}
   end
 
   @doc """
@@ -167,15 +255,7 @@ defmodule Bulls.Game do
     |> Enum.any?(fn(name) -> name == playerName end)
   end
 
-  def setPlayerReadiness(players, playerName, readiness) do
-    players
-    |> Map.put(playerName, ["player", readiness])
-  end  
-
-  @doc """
-  Calculate the number of correct digits in the guess from the answer.
-  """
-  def numBulls(guess, answer) do
+  defp numBulls(guess, answer) do
     Enum.reduce(0..(@num_digits - 1), 0, fn i, acc ->
       if Enum.at(guess, i) == Enum.at(answer, i) do
         acc + 1
@@ -185,16 +265,8 @@ defmodule Bulls.Game do
     end)
   end
 
-  @doc """
-  Calculate number of common digits between the guess and answer.
-  """
-  def numCows(guess, answer) do
+  defp numCows(guess, answer) do
     Enum.count(guess, fn d -> Enum.member?(answer, d) end)
-  end
-
-  def setAllPlayersUnready(players) do
-    # Credit: https://stackoverflow.com/questions/26614682/how-to-change-all-the-values-in-an-elixir-map
-    for {name, _} <- players, into: %{}, do: {name, ["player", "unready"]}
   end
 
 end

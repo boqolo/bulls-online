@@ -73,18 +73,24 @@ defmodule BullsWeb.GameChannel do
   @impl true
   def handle_in("toggle_ready", _payload, socket0) do
     %{gameName: gname, playerName: pname} = socket0.assigns
-    GameServer.toggleReady(gname, pname)
+    readiness = 
+      GameServer.peek(gname)
+      |> Map.get(:players)
+      |> Map.get(pname)
+      |> List.last()
 
-    if GameServer.readyToAdvance?(gname) do
-      GameServer.beginGame(gname)
-      {:noreply, socket0}
+    if readiness == "ready" do
+      GameServer.setPlayerReadiness(gname, pname, "unready")
     else
-      socket1 = 
-        socket0
-        |> assign(message: "Please wait. The game will start when everyone is ready.")
-
-      {:noreply, socket1}
+      GameServer.setPlayerReadiness(gname, pname, "ready")
+      if GameServer.readyToAdvance?(gname), do: GameServer.advanceGame(gname)
     end
+    
+    socket1 = 
+      socket0
+      |> assign(message: "Please wait. The game will start when everyone is ready.")
+
+    {:noreply, socket1}
   end
 
   @impl true
@@ -120,10 +126,15 @@ defmodule BullsWeb.GameChannel do
     socket1 =
       unless GameServer.duplicateGuess?(gname, pname, guess) do
         GameServer.makeGuess(gname, pname, guess)
-        GameServer.makePlayerReady(gname, pname)
+        GameServer.setPlayerReadiness(gname, pname, "ready")
+        if GameServer.readyToAdvance?(gname) do
+          GameServer.determineRoundResult(gname)
+          GameServer.advanceGame(gname)
+        end
 
-        # remove user message
+        # remove user input + message
         socket0
+        |> assign(inputValue: "")
         |> assign(message: "")
       else
         # add user message
@@ -137,7 +148,11 @@ defmodule BullsWeb.GameChannel do
   @impl true
   def handle_in("skip_guess", _payload, socket0) do
     %{gameName: gname, playerName: pname} = socket0.assigns
-    GameServer.makePlayerReady(gname, pname)
+    GameServer.setPlayerReadiness(gname, pname, "ready")
+    if GameServer.readyToAdvance?(gname) do
+      GameServer.determineRoundResult(gname)
+      GameServer.advanceGame(gname)
+    end
 
     # delete input
     socket1 =
@@ -183,7 +198,10 @@ defmodule BullsWeb.GameChannel do
   end
 
   defp validName?(name) do
-    String.length(name) > 0 && String.valid?(name) && String.length(name) < 10
+    String.length(name) > 0 
+    && String.valid?(name) 
+    && String.length(name) < 10 
+    && !String.match?(name, ~r/\W/)
   end
 
   # Checks if given input string could form a valid guess.

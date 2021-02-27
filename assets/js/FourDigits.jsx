@@ -161,19 +161,6 @@ function History({guesses}) {
   );
 }
 
-function GameOver({restartGame}) {
-    return (
-      <>
-        <h1 className={"game-over-header"}>Game Over</h1>
-          <h3>You ran out of guesses.</h3>
-          <p>Better luck next time...</p>
-          <button className={"pure-button pure-button-primary"}
-                  onClick={restartGame}>Restart
-          </button>
-      </>
-    );
-}
-
 function NamesList({
   allNames,
   playerNames,
@@ -184,7 +171,7 @@ function NamesList({
     <div className={"players-container"}>
       <label className={"guess-list-label"}>Players/Observers:</label>
       {allNames.map(name => 
-        <div key={name} className={"lobby-player"}>
+        <div key={`p-${name}`} className={"lobby-player"}>
           <div className={!readyPlayers.includes(name) ? "unready-player" : ""}>
             {name}
           </div>
@@ -194,10 +181,37 @@ function NamesList({
   );
 }
 
+function ScoresList({scores}) {
+  console.log(Object.keys(scores));
+
+  return (
+    <div>
+      <label className={"guess-list-label"}>Scores:</label>
+      {Object.keys(scores).map(player => 
+        <div key={`${player}-s`} className={"guess-item"}>
+          <div className={"pure-g"}>
+            <div className={"pure-u-1-3"}>
+              {player}
+            </div>
+            <div className={"pure-u-1-3"}>
+              {`W: ${scores[player][0]}`}
+            </div>
+            <div className={"pure-u-1-3"}>
+              {`L: ${scores[player][1]}`}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+}
+
 function Lobby({
   playerName,
   gameName, 
   players,
+  scores,
 }) {
 
   const allNames = Object.keys(players);
@@ -251,19 +265,22 @@ function Lobby({
   return (
     <div>
       <div className={"pure-g"}>
-        <div className={"pure-u-2-3"}>
+        <div className={"pure-u-9-24"}>
           <NamesList allNames={allNames}
                     playerNames={playerNames}
                     readyPlayers={readyPlayers}
           />
         </div>
-        <div className={"pure-u-1-3 lobby-buttons-container"}>
+        <div className={"pure-u-9-24 lobby-buttons-container"}>
           <div className={"lobby-button"}>
             {!isObserver && readinessButton(playerReady)}
           </div>
           <div className={"lobby-button"}>
             {observerButton(isObserver)}
           </div>
+        </div>
+        <div className={"pure-u-6-24"}>
+          <ScoresList scores={scores}/>
         </div>
       </div>
     </div>
@@ -275,7 +292,6 @@ function GameRoom({
   playerName,
   players,
   history,
-  gameWon,
 }) {
 
   const MAX_DIGITS = 4;
@@ -337,8 +353,8 @@ function Game({state}) {
     inputValue, 
     history, 
     players,
-    gameWon, 
-    message
+    message,
+    scores
   } = state;
 
   const allNames = Object.keys(players);
@@ -353,23 +369,19 @@ function Game({state}) {
   
   let body;
 
-  if (gameWon) {
-    body = <GameOver restartGame={restartGame}/>;
-  } else if (gamePhase == "lobby") {
+  if (gamePhase == "lobby") {
     body = <Lobby
             playerName={playerName}
             gameName={gameName}
             players={players}
+            scores={scores}
           />    
-  } else if (gamePhase == "endgame") {
-    // TODO maybe not needed
   } else { // gamePhase === "playing"
     body = <GameRoom 
             inputValue={inputValue}
             playerName={playerName}
             players={players}
             history={history}
-            gameWon={gameWon} 
           />
   }
 
@@ -402,8 +414,8 @@ export default function FourDigits() {
     history: {},
     // {playerName (string): ["player" | "observer", "ready" | "unready"]
     players: {}, 
-    gameWon: false,
-    message: ""
+    message: "",
+    scores: {}
   });
 
   const {playerName, message} = state;

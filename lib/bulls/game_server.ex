@@ -4,6 +4,8 @@ defmodule Bulls.GameServer do
   alias Bulls.{Game, GameAgent, GameSupervisor}
   require Logger
 
+  @guessTime 30_000
+
   # Client API
 
   # This is like a ticket identifier to use the name to
@@ -41,20 +43,16 @@ defmodule Bulls.GameServer do
     GenServer.call(registry(gameName), {:reset})
   end
 
-  def beginGame(gameName) do
-    GenServer.cast(registry(gameName), {:beginGame})
+  def advanceGame(gameName) do
+    GenServer.cast(registry(gameName), {:advanceGame})
   end
 
   def addPlayer(gameName, playerName) do
-    GenServer.cast(registry(gameName), {:addPlayer, gameName, playerName})
+    GenServer.cast(registry(gameName), {:addPlayer, playerName})
   end
 
   def removePlayer(gameName, playerName) do
-    GenServer.cast(registry(gameName), {:removePlayer, gameName, playerName})
-  end
-
-  def toggleReady(gameName, playerName) do
-    GenServer.cast(registry(gameName), {:toggleReady, playerName})
+    GenServer.cast(registry(gameName), {:removePlayer, playerName})
   end
 
   def toggleObserver(gameName, playerName) do
@@ -62,20 +60,24 @@ defmodule Bulls.GameServer do
   end
 
   def makeGuess(gameName, playerName, guess) do
-    GenServer.cast(registry(gameName), {:guess, gameName, playerName, guess})
+    GenServer.cast(registry(gameName), {:guess, playerName, guess})
   end
 
-  def makePlayerReady(gameName, playerName) do
-    GenServer.cast(registry(gameName), {:makePlayerReady, gameName, playerName})
+  def determineRoundResult(gameName) do
+    GenServer.cast(registry(gameName), {:determineRoundResult})
+  end
+
+  def setPlayerReadiness(gameName, playerName, readiness) do
+    GenServer.cast(registry(gameName), {:setPlayerReadiness, playerName, readiness})
   end
 
   defp sendBroadcast() do
     Process.send(self(), :broadcast, [])
   end
 
-  # defp sendBroadcastAfter(ms) do
-  #   Process.send_after(self(), :broadcast, ms, [])
-  # end
+  defp sendBroadcastAfter(ms) do
+    Process.send_after(self(), :broadcast, ms, [])
+  end
 
   # Callbacks
   # These correspond with Client API `call`s
@@ -110,18 +112,62 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
+  def handle_info({:timeExpired, guessed}, gameState0) do 
+    Logger.debug("\n\n\n\n\nTIMEOUT: " <> inspect(guessed) <> "--" <> inspect(gameState0.numPlayers))
+    # if sofar != numPlayers
+    gameState1 = if guessed != gameState0.numPlayers do
+      Game.setAllPlayerReadiness(gameState0, "ready")
+    else
+      gameState0
+    end
+    sendBroadcast()
+    {:noreply, gameState1}
+  end
+
+  @impl true
+  def handle_info(:advanceGame, gameState0) do
+    %{gamePhase: gamePhase} = gameState0
+    gameState1 = case gamePhase do
+      "lobby" -> gameState0
+        |> Game.setGamePhase("playing")
+        |> Game.setAllPlayerReadiness("unready")
+        |> Game.setMessage("")
+      "endgame" -> gameState0
+        |> Game.setGamePhase("lobby")
+        |> Game.setAllPlayerReadiness("unready")
+        |> Game.setMessage("Round over. Somebody guessed correctly!")
+      _ -> gameState0
+        |> Game.setAllPlayerReadiness("unready")
+        |> Game.setMessage("You have 30 seconds to place a guess.")
+    end
+    Process.send_after(self(), {:timeExpired, Enum.count(Map.keys(gameState1.round))}, @guessTime, [])
+    # Set minimal delay to ensure socket state for each player gets
+    # set properly to receive broadcast state
+    sendBroadcastAfter(5_00)
+    {:noreply, gameState1}
+  end
+
+  @impl true
+  def handle_call({:readyToAdvance?}, _from, %{players: players, round: round, numPlayers: numPlayers} = gameState0) do
+    anyUnreadyPlayers? = fn() -> 
+      Enum.any?(Map.keys(players), fn(player) -> 
+        [player?, readiness] = Map.get(players, player)
+        if player? == "player", do: readiness == "unready", else: false 
+      end) 
+    end
+    receivedAllGuesses? = Enum.count(Map.keys(round)) == numPlayers
+    # Second clause added for determining if lobby is ready. Since more expensive, first clause introduced
+    ready? = receivedAllGuesses? || !anyUnreadyPlayers?.() 
+    {:reply, ready?, gameState0}
+  end
+
+  @impl true
   def handle_call({:peek}, _from, gameState) do
     {:reply, gameState, gameState}
   end
 
   @impl true
-  def handle_call({:readyToAdvance?}, _from, gameState0) do
-    ready? = Game.readyToAdvance?(gameState0)
-    {:reply, ready?, gameState0}
-  end
-
-  @impl true
-  def handle_call({:reset, gameName}, _from, gameState0) do
+  def handle_call({:reset}, _from, %{gameName: gameName} = gameState0) do
     # FIXME remove?
     gameState1 = %{Game.new() | players: Map.get(gameState0, "players")}
     GameAgent.put(gameName, gameState1)
@@ -136,7 +182,7 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
-  def handle_cast({:addPlayer, _gameName, playerName}, gameState0) do
+  def handle_cast({:addPlayer, playerName}, gameState0) do
     gameState1 = Game.addPlayer(gameState0, playerName)
     # GameAgent.put(gameName, gameState1)
     sendBroadcast()
@@ -144,17 +190,10 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
-  def handle_cast({:removePlayer, _gameName, playerName}, gameState0) do
+  def handle_cast({:removePlayer, playerName}, gameState0) do
     gameState1 = Game.removePlayer(gameState0, playerName)
     # GameAgent.put(gameName, gameState1)
     Logger.debug("AFTER REMOVE: " <> inspect(gameState1))
-    sendBroadcast()
-    {:noreply, gameState1}
-  end
-
-  @impl true
-  def handle_cast({:toggleReady, playerName}, gameState0) do
-    gameState1 = Game.toggleReady(gameState0, playerName)
     sendBroadcast()
     {:noreply, gameState1}
   end
@@ -167,27 +206,30 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
-  def handle_cast({:beginGame}, gameState0) do
-    # TODO send alert?? (sendBroadCastAfter)
-    gameState1 = Game.beginGame(gameState0)
-    sendBroadcast()
-    {:noreply, gameState1}
-  end
-
-  @impl true
-  def handle_cast({:guess, _gameName, playerName, guess}, gameState0) do
-    gameState1 = Game.makeGuess(gameState0, guess, playerName)
+  def handle_cast({:guess, playerName, guess}, gameState0) do
+    gameState1 = Game.makeGuess(gameState0, playerName, guess)
     # GameAgent.put(gameName, gameState1)
-    # Set minimal delay to ensure socket state for each player gets
-    # set properly to receive broadcast state
     {:noreply, gameState1}
   end
 
   @impl true
-  def handle_cast({:makePlayerReady, _gameName, playerName}, gameState0) do
-    gameState1 = Game.makePlayerReady(gameState0, playerName)
+  def handle_cast({:determineRoundResult}, gameState0) do
+    gameState1 = Game.determineRoundResult(gameState0)
+    # sendBroadcast()
+    {:noreply, gameState1}
+  end
+
+  @impl true
+  def handle_cast({:setPlayerReadiness, playerName, readiness}, gameState0) do
+    gameState1 = Game.setPlayerReadiness(gameState0, playerName, readiness)
     sendBroadcast()
     {:noreply, gameState1}
+  end
+
+  @impl true
+  def handle_cast({:advanceGame}, gameState0) do
+    Process.send(self(), :advanceGame, [])
+    {:noreply, gameState0}
   end
 
 end
