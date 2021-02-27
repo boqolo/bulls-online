@@ -158,6 +158,7 @@ defmodule BullsWeb.GameChannel do
     socket1 =
       socket0
       |> assign(inputValue: "")
+      |> assign(message: "")
 
     {:noreply, socket1}
   end

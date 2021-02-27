@@ -139,7 +139,6 @@ defmodule Bulls.GameServer do
       "endgame" -> gameState0
         |> Game.setGamePhase("lobby")
         |> Game.setAllPlayerReadiness("unready")
-        |> Game.setMessage("Round over. Somebody guessed correctly!")
       _ -> gameState0
         |> Game.setAllPlayerReadiness("unready")
         |> Game.setMessage("You have 30 seconds to place a guess.")
@@ -214,7 +213,6 @@ defmodule Bulls.GameServer do
   def handle_cast({:removePlayer, playerName}, gameState0) do
     gameState1 = Game.removePlayer(gameState0, playerName)
     # GameAgent.put(gameName, gameState1)
-    Logger.debug("AFTER REMOVE: " <> inspect(gameState1))
     sendBroadcast()
     {:noreply, gameState1}
   end

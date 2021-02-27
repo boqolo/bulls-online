@@ -163,6 +163,7 @@ defmodule Bulls.Game do
             {name, [wins, losses + 1]} 
       newHistory = for {name, _} <- game.history, into: %{}, do: {name, %{}}
           %{game | 
+            message: Enum.join(winners, ", ") <> "got it right!",
             gamePhase: "endgame", 
             answer: create4Digits(), 
             scores: newScores, 
