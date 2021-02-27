@@ -22,14 +22,14 @@ defmodule BullsWeb.GameChannel do
     if validName?(gname) && validName?(pname) do
       noGameServerRunning? = Registry.lookup(Bulls.GameRegistry, gname) == []
       if noGameServerRunning?, do: GameServer.start(gname)
-      GameServer.addPlayer(gname, pname)
+        name = GameServer.addPlayer(gname, pname)
 
       socket1 =
         socket0
         |> assign(gameName: gname)
-        |> assign(playerName: pname)
+        |> assign(playerName: name)
         |> assign(inputValue: "")
-        |> assign(message: "Welcome, " <> pname <> "! Play or observe. Click ready to start.")
+        |> assign(message: "Welcome, " <> name <> "! Play or observe. Click ready to start.")
 
       {:noreply, socket1}
     else

@@ -42,12 +42,12 @@ defmodule Bulls.GameServer do
     GenServer.call(registry(gameName), {:reset})
   end
 
-  def advanceGame(gameName) do
-    GenServer.cast(registry(gameName), {:advanceGame})
+  def addPlayer(gameName, playerName) do
+    GenServer.call(registry(gameName), {:addPlayer, playerName})
   end
 
-  def addPlayer(gameName, playerName) do
-    GenServer.cast(registry(gameName), {:addPlayer, playerName})
+  def advanceGame(gameName) do
+    GenServer.cast(registry(gameName), {:advanceGame})
   end
 
   def removePlayer(gameName, playerName) do
@@ -202,11 +202,15 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
-  def handle_cast({:addPlayer, playerName}, gameState0) do
+  def handle_call({:addPlayer, playerName}, _from, gameState0) do
     gameState1 = Game.addPlayer(gameState0, playerName)
+    # This is done to confirm what name the server ultimately
+    # assigns to the user. I.e. duplicate names are appended
+    # with a random number 1-1000
+    pname = Enum.at(Map.keys(gameState1.players), gameState1.numPlayers - 1)
     # GameAgent.put(gameName, gameState1)
     sendBroadcast()
-    {:noreply, gameState1}
+    {:reply, pname, gameState1}
   end
 
   @impl true

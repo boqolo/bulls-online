@@ -221,7 +221,14 @@ defmodule Bulls.Game do
   def removePlayer(game, playerName) do
     # Remove a player from the game but keep them in the 
     # guess history
-    %{game | players: Map.drop(game.players, [playerName])}
+    newNumPlayers = if List.first(Map.get(game.players, playerName)) == "player" do
+      game.numPlayers - 1
+    else
+      game.numPlayers
+    end
+    %{game | 
+      players: Map.drop(game.players, [playerName]),
+      numPlayers: newNumPlayers}
   end
 
   defp create4Digits() do
