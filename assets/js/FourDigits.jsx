@@ -57,7 +57,6 @@ function Register({message}) {
           </div>
         </div>
       </div>
-      {message && <div className={"register-message"}>{message}</div>}
     </div>
   );
 }
