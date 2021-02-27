@@ -164,7 +164,8 @@ defmodule Bulls.Game do
             {name, [wins + 1, losses]},
           else:
             {name, [wins, losses + 1]} 
-          %{game | gamePhase: "endgame", answer: create4Digits(), scores: newScores, history: %{}}
+      newHistory = for {name, _} <- game.history, into: %{}, do: {name, %{}}
+      %{game | gamePhase: "endgame", answer: create4Digits(), scores: newScores, history: newHistory}
     else
       game
     end
