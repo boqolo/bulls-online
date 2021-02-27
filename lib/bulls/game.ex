@@ -51,7 +51,7 @@ defmodule Bulls.Game do
     Map.merge(assigns, sanitizedState, fn(k, v1, v2) -> if k == :message, 
       do: if(v2 == "", do: v1, else: v2),
       else: v2 
-    end) # Game messages precede user messages
+    end) # Game messages precede user messages unless they're empty
   end
 
   def setMessage(game, message) do
@@ -84,9 +84,6 @@ defmodule Bulls.Game do
     %{game | players: newPlayers}
   end
 
-  @doc """
-  Collect a player's guess for the round.
-  """
   def makeGuess(game, playerName, guess) do
     newRound = Map.put(game.round, playerName, guess)
     %{game | round: newRound}
@@ -148,16 +145,16 @@ defmodule Bulls.Game do
   declared winners.
   """
   def determineRoundResult(%{players: players} = game) do
-    # TODO check guess correct, determine accuracies, add guesses to history
-    # # newHistory, remove round guess
-    # FIXME reply
     
     # accumulate
-    {game, winners} = List.foldr(Map.keys(players), {game, []}, fn(playerName, acc) -> determinePlayerResult(playerName, acc) end) # (). ???
+    {game, winners} = List.foldr(
+      Map.keys(players), 
+      {game, []}, 
+      fn(playerName, acc) -> determinePlayerResult(playerName, acc) end # (). ???
+    ) 
 
     gameOver? = Enum.count(winners) > 0
     if gameOver? do
-      # TODO calcuilate scores, reset game
       newScores = for {name, [wins, losses]} <- game.scores, into: %{}, do:
         if Enum.member?(winners, name),
           do: 
@@ -165,7 +162,11 @@ defmodule Bulls.Game do
           else:
             {name, [wins, losses + 1]} 
       newHistory = for {name, _} <- game.history, into: %{}, do: {name, %{}}
-      %{game | gamePhase: "endgame", answer: create4Digits(), scores: newScores, history: newHistory}
+          %{game | 
+            gamePhase: "endgame", 
+            answer: create4Digits(), 
+            scores: newScores, 
+            history: newHistory}
     else
       game
     end
@@ -189,7 +190,13 @@ defmodule Bulls.Game do
     %{game | players: newPlayers}
   end
 
-  def addPlayer(%{history: history, players: players, gamePhase: gamePhase, numPlayers: numPlayers, scores: scores} = game, playerName) do
+  def addPlayer(
+    %{history: history, 
+      players: players, 
+      gamePhase: gamePhase, 
+      numPlayers: numPlayers, 
+      scores: scores} = game,
+    playerName) do
     unless duplicateName?(players, playerName) do
       newHistory = Map.put(history, playerName, %{})
       {newPlayerStatus, incrementPlayers} = if gamePhase != "lobby" do
@@ -199,7 +206,11 @@ defmodule Bulls.Game do
       end
       newPlayers = Map.put(players, playerName, newPlayerStatus)
       newScores = Map.put(scores, playerName, [0, 0])
-      %{game | history: newHistory, players: newPlayers, numPlayers: incrementPlayers, scores: newScores}
+      %{game | 
+        history: newHistory,
+        players: newPlayers, 
+        numPlayers: incrementPlayers, 
+        scores: newScores}
       else
       # Append a random number to name if taken
       addPlayer(game, playerName <> Integer.to_string(:rand.uniform(1000)))
@@ -212,10 +223,7 @@ defmodule Bulls.Game do
     %{game | players: Map.drop(game.players, [playerName])}
   end
 
-  @doc """
-  Generate the 4 random, unique digits in [1, 9] as the answer to a game.
-  """
-  def create4Digits() do
+  defp create4Digits() do
     digits = Enum.map(1..4, fn _ -> :rand.uniform(9) end)
     numUniq = Enum.count(Enum.uniq(digits))
 
@@ -225,32 +233,7 @@ defmodule Bulls.Game do
     end
   end
 
-  def readyToAdvance?(%{players: players} = _game) do
-    # FIXME check only players and not observers
-    Map.values(players)
-    |> Enum.map(fn(status) -> List.last(status) end)
-    |> Enum.all?(fn(readiness) -> readiness == "ready" end)
-  end
-
-  @doc """
-  Check if a player has already made a guess before.
-  """
-  def duplicateGuess?(%{history: history} = _game, playerName, guess) do
-    Logger.debug(inspect(history))
-    playerGuessHistory = Map.get(history, playerName)
-    numPrevGuesses = Map.keys(playerGuessHistory)
-
-    Enum.any?(numPrevGuesses, fn i ->
-      [prevGuess, _, _] = Map.get(playerGuessHistory, i)
-      prevGuess == guess
-    end)
-  end
-
-  @doc """
-  Check if a given name is already represented in the
-  map of players.
-  """
-  def duplicateName?(players, playerName) do
+  defp duplicateName?(players, playerName) do
     players
     |> Map.keys()
     |> Enum.any?(fn(name) -> name == playerName end)

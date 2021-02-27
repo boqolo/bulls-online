@@ -18,16 +18,10 @@ defmodule BullsWeb.GameChannel do
 
   @impl true
   def handle_in("register", %{"gameName" => gname, "playerName" => pname} = _args, socket0) do
-    Logger.debug("REGISTER: " <> inspect(socket0))
 
     if validName?(gname) && validName?(pname) do
-      # TODO not always starting a new game
-      # TODO add topic to game state
-      # FIXME checking if game exists on join again w same name
       noGameServerRunning? = Registry.lookup(Bulls.GameRegistry, gname) == []
-      Logger.debug("RUNNINGGAME??: " <> inspect(noGameServerRunning?))
       if noGameServerRunning?, do: GameServer.start(gname)
-      Logger.debug(inspect(gname) <> inspect(pname))
       GameServer.addPlayer(gname, pname)
 
       socket1 =
@@ -176,9 +170,9 @@ defmodule BullsWeb.GameChannel do
 
   @impl true
   def handle_in("validate", inputValue, socket0) do
-    Logger.debug("Received: " <> inspect(inputValue))
     %{gameName: gname} = socket0.assigns
     game0 = GameServer.peek(gname)
+
     # reject non-digits, 0, duplicated digits, and impose limit
     {game, socket} =
       unless invalidInput?(inputValue) do

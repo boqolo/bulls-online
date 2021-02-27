@@ -120,12 +120,19 @@ input:focus {
 
 .register-container {
   width: 300px;
+  display: flex;
+  flex-direction: column;
   background: var(--greyish);
   margin: 3% auto;
-  padding: 1% 5% 2%;
+  padding: 1% 5% 0;
   border-radius: 10px;
   user-select: none;
   box-shadow: 4px 4px 10px var(--just-about-black);
+}
+
+.register-buttons-container {
+  margin: 8% auto;
+  font-size: 1.4em;
 }
 
 .input-container {

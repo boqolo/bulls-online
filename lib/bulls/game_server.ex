@@ -23,7 +23,6 @@ defmodule Bulls.GameServer do
       restart: :permanent,
       type: :worker
     }
-    Logger.debug("************ NEW GAME SERVER STARTED")
     GameSupervisor.start_child(spec)
   end
 
@@ -92,7 +91,6 @@ defmodule Bulls.GameServer do
     #     GameAgent.get(gameName)
     #   end
     game = Game.new(gameName)
-    Logger.debug("GameServer start_link: " <> inspect(game))
     GenServer.start_link(__MODULE__, game, name: registry(gameName))
   end
 
@@ -113,8 +111,6 @@ defmodule Bulls.GameServer do
 
   @impl true
   def handle_info({:timeExpired, guessed}, gameState0) do 
-    Logger.debug("\n\n\n\n\nTIMEOUT: " <> inspect(guessed) <> "--" <> inspect(gameState0.numPlayers))
-    # if sofar != numPlayers
     gameState1 = if guessed != gameState0.numPlayers && gameState0.gamePhase == "playing" do
       Game.setAllPlayerReadiness(gameState0, "ready")
       |> Game.determineRoundResult()
@@ -148,7 +144,10 @@ defmodule Bulls.GameServer do
         |> Game.setAllPlayerReadiness("unready")
         |> Game.setMessage("You have 30 seconds to place a guess.")
     end
-    Process.send_after(self(), {:timeExpired, Enum.count(Map.keys(gameState1.round))}, @guessTime, [])
+    Process.send_after(
+      self(), 
+      {:timeExpired, Enum.count(Map.keys(gameState1.round))}, @guessTime, []
+    )
     Process.send_after(self(), :clearMessage, 5_000, [])
     # Set minimal delay to ensure socket state for each player gets
     # set properly to receive broadcast state
@@ -157,7 +156,10 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
-  def handle_call({:readyToAdvance?}, _from, %{players: players, round: round, numPlayers: numPlayers} = gameState0) do
+  def handle_call({:readyToAdvance?}, 
+    _from, 
+    %{players: players, round: round, numPlayers: numPlayers} = gameState0) do
+
     anyUnreadyPlayers? = fn() -> 
       Enum.any?(Map.keys(players), fn(player) -> 
         [player?, readiness] = Map.get(players, player)
@@ -165,7 +167,8 @@ defmodule Bulls.GameServer do
       end) 
     end
     receivedAllGuesses? = Enum.count(Map.keys(round)) == numPlayers
-    # Second clause added for determining if lobby is ready. Since more expensive, first clause introduced
+    # Second clause added for determining if lobby is ready. 
+    # Since could be more expensive, first clause introduced
     ready? = receivedAllGuesses? || !anyUnreadyPlayers?.() 
     {:reply, ready?, gameState0}
   end
@@ -185,8 +188,17 @@ defmodule Bulls.GameServer do
   end
 
   @impl true
-  def handle_call({:duplicateGuess?, playerName, guess}, _from, gameState0) do
-    dupe? = Game.duplicateGuess?(gameState0, playerName, guess)
+  def handle_call(
+    {:duplicateGuess?, playerName, guess}, 
+    _from, 
+    %{history: history} = gameState0) do
+    playerGuessHistory = Map.get(history, playerName)
+    numPrevGuesses = Map.keys(playerGuessHistory)
+
+    dupe? = Enum.any?(numPrevGuesses, fn i ->
+      [prevGuess, _, _] = Map.get(playerGuessHistory, i)
+      prevGuess == guess
+    end)
     {:reply, dupe?, gameState0}
   end
 
@@ -224,7 +236,6 @@ defmodule Bulls.GameServer do
   @impl true
   def handle_cast({:determineRoundResult}, gameState0) do
     gameState1 = Game.determineRoundResult(gameState0)
-    # sendBroadcast()
     {:noreply, gameState1}
   end
 

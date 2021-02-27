@@ -26,7 +26,7 @@ const counter = (function () {
 }) ();
 
 function serverUpdate(state) {
-  console.log("Received server update", counter(), state);
+  // console.log("Received server update", counter(), state);
   appState = state;
   if (appStateCallback) {
     appStateCallback(appState);

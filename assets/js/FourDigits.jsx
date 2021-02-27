@@ -1,5 +1,15 @@
 import React from "react";
-import { ch_init, ch_skip_guess, ch_join, ch_leave, ch_guess, ch_toggle_observer, ch_reset, ch_validate, ch_toggle_ready } from "./socket";
+import { 
+  ch_init, 
+  ch_skip_guess, 
+  ch_join, 
+  ch_leave, 
+  ch_guess, 
+  ch_toggle_observer, 
+  ch_reset, 
+  ch_validate, 
+  ch_toggle_ready 
+} from "./socket";
 
 function Register({message}) {
   const [gameName, setGameName] = React.useState("");
@@ -36,7 +46,7 @@ function Register({message}) {
               onChange={ev => handleKey(ev, setPlayerName)}
               onKeyPress={ev => pressedEnter(ev, gameName, playerName)}>
         </input>
-        <div className={"buttons-container"}>
+        <div className={"register-buttons-container"}>
           <button className={"pure-button pure-button-primary"}
                   disabled={!(gameName && playerName)}
                   onClick={() => handleJoin(gameName, playerName)}>
@@ -204,7 +214,6 @@ function ScoresList({scores}) {
       )}
     </div>
   );
-
 }
 
 function Lobby({
