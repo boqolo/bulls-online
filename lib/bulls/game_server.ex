@@ -128,6 +128,7 @@ defmodule Bulls.GameServer do
   @impl true
   def handle_info(:clearMessage, gameState0) do 
     gameState1 = Game.setMessage(gameState0, "")
+    sendBroadcast()
     {:noreply, gameState1}
   end
 
