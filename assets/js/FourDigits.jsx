@@ -52,6 +52,9 @@ function Register({message}) {
                   onClick={() => handleJoin(gameName, playerName)}>
             Start
           </button>
+          <div className={"help-link"}>
+            <a href={"https://en.wikipedia.org/wiki/Bulls_and_Cows"}>How to play</a>
+          </div>
         </div>
       </div>
       {message && <div className={"register-message"}>{message}</div>}
@@ -448,7 +451,7 @@ export default function FourDigits() {
     <>
       <div className={"header"}>
         <div className={"logo"}>
-          <div className={"game-title-header"}>4Digits</div>
+          <div className={"game-title-header"}>Bulls</div>
           <div>[ Online ]</div>
         </div>
         {message && <div className={"game-message"}>{message}</div>}

@@ -54,6 +54,12 @@ input:focus {
   user-select: none;
 }
 
+.help-link {
+  font-size: 0.6em;
+  margin: 10% auto 0;
+  text-align: center;
+}
+
 .green-status-bar {
   user-select: none;
   box-shadow: 4px 4px 10px var(--just-about-black);
