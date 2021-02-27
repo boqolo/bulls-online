@@ -54,11 +54,21 @@ input:focus {
   user-select: none;
 }
 
-.status-bar {
+.green-status-bar {
   user-select: none;
   box-shadow: 4px 4px 10px var(--just-about-black);
   font-size: 1.6em;
   background-color: var(--green);
+  padding: 1% 1%;
+  text-align: center;
+  align-items: center;
+}
+
+.blue-status-bar {
+  user-select: none;
+  box-shadow: 4px 4px 10px var(--just-about-black);
+  font-size: 1.6em;
+  background-color: var(--whale-blue);
   padding: 1% 1%;
   text-align: center;
   align-items: center;

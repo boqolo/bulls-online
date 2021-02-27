@@ -396,7 +396,7 @@ function Game({state}) {
 
   return (
     <>
-      <div className={"status-bar"}>
+      <div className={gamePhase === "lobby" ? "green-status-bar" : "blue-status-bar"}>
         <div>{`${gamePhase === "lobby" ? "Lobby" : "Game"}: ${gameName}`}</div>
         <div>
           {`${playerNames.length} players | ${readyPlayers.length} ready`}
